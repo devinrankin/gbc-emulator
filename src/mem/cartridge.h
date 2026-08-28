@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "../common.h"
+#include "mbc.h"
 
 #define CART_MAX_ROM_SIZE (8 * 1024 * 1024)
 #define CART_MAX_RAM_SIZE (32 * 1024)
@@ -91,6 +92,7 @@ typedef struct {
 
 typedef struct cartridge {
     cartridge_header_t header;
+    mbc_t mbc;
 
     uint8_t rom[CART_MAX_ROM_SIZE];
     uint8_t ram[CART_MAX_RAM_SIZE];
