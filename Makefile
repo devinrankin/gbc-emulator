@@ -5,7 +5,7 @@ SRC_DIR = src
 CC = clang
 CFLAGS = -Wall -Werror
 
-TARGETS = main cartridge sm83/sm83 sm83/sm83_opcodes sm83/bus
+TARGETS = main mem/cartridge mem/mbc sm83/sm83 sm83/sm83_opcodes sm83/bus
 
 .PHONY: build clean
 
