@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "bus.h"
+#include "../mem/bus.h"
 
 #define SM83_GB_CLOCK_HZ (4194304u)
 #define SM83_CGB_CLOCK_HZ (8388608u)
