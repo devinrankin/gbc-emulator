@@ -13,12 +13,10 @@ static uint8_t cartridge_title_len(cartridge_t* cartridge) {
 static void cartridge_parse_title(cartridge_t* cartridge) {
     uint8_t title_len = cartridge_title_len(cartridge);
 
-    printf("cart title len: %u\n", title_len);
     int idx = 0;
     for(uint16_t addr = CART_HDR_TITLE; addr < CART_HDR_TITLE + title_len - 1; addr++) {
         cartridge->header.title[idx++] = cartridge->rom[addr];
     }
-    printf("idx value: %d\n", idx);
     cartridge->header.title[idx] = '\0';
 }
 
