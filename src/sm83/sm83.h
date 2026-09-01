@@ -41,7 +41,7 @@ typedef struct sm83 sm83_t;
 struct sm83 {
     sm83_state_t state;
     registers_t registers;
-    cartridge_t* cartridge;
+    bus_t* bus;
 
     bool halted;
     bool ime;
@@ -52,7 +52,6 @@ void sm83_step(sm83_t* sm83);
 void sm83_run(uint8_t* rom, sm83_t* sm83);
 
 bool sm83_get_flag(sm83_t* sm83, uint8_t flag);
-void sm83_set_flag(sm83_t* sm83, uint8_t flag, bool val);
 void sm83_update_flags(sm83_t* sm83, uint8_t mask, uint8_t values);
 
 uint8_t sm83_read_r8_or_hl(sm83_t* sm83, uint8_t index);
