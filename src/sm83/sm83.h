@@ -55,9 +55,9 @@ bool sm83_get_flag(sm83_t* sm83, uint8_t flag);
 void sm83_update_flags(sm83_t* sm83, uint8_t mask, uint8_t values);
 
 uint8_t sm83_read_r8_or_hl(sm83_t* sm83, uint8_t index);
-void sm83_write_r8_or_hl(sm83_t* sm83, uint8_t index, uint8_t val);
+void sm83_write_r8_or_hl(sm83_t* sm83, uint8_t index, uint8_t value);
 
 uint16_t sm83_read_r16(sm83_t* sm83, uint8_t pair);
-void sm83_write_r16(sm83_t* sm83, uint8_t pair, uint16_t val);
+void sm83_write_r16(sm83_t* sm83, uint8_t pair, uint16_t value);
 
 #endif
