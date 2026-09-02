@@ -4,11 +4,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+
 #include "../common.h"
 #include "mbc.h"
 
-#define CART_MAX_ROM_SIZE (8 * 1024 * 1024)
-#define CART_MAX_RAM_SIZE (32 * 1024)
+#define CART_MAX_ROM_SIZE (8 * SIZE_MIB)
+#define CART_MAX_RAM_SIZE (32 * SIZE_KIB)
 
 #define CART_MAX_TITLE_LEN 16
 
