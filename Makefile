@@ -1,18 +1,31 @@
-PROJ_NAME = gbcemu
-BUILD_DIR = build
-SRC_DIR = src
+PROJ_NAME := gbcemu
+BUILD_DIR := build
+SRC_DIR := src
 
-CC = clang
-CFLAGS = -Wall -Werror
+CC := clang
+CFLAGS := -Wall -Werror
 
-TARGETS = main mem/cartridge mem/mbc sm83/sm83 sm83/sm83_opcodes sm83/bus
+SOURCES := \
+	$(SRC_DIR)/main.c \
+	$(SRC_DIR)/gbc.c \
+	$(SRC_DIR)/mem/bus.c \
+	$(SRC_DIR)/mem/cartridge.c \
+	$(SRC_DIR)/mem/mbc.c \
+	$(SRC_DIR)/sm83/sm83.c \
+	$(SRC_DIR)/sm83/sm83_opcodes.c
+
+OBJECTS := $(SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 .PHONY: build clean
 
-build:
-	$(CC) $(CFLAGS) $(foreach src, $(TARGETS), $(SRC_DIR)/$(src).c) -o $(PROJ_NAME)
-	mkdir -p $(BUILD_DIR)
-	mv $(foreach obj, $(TARGETS), $(obj).o) $(PROJ_NAME) $(BUILD_DIR)/
+build: $(BUILD_DIR)/$(PROJ_NAME)
+
+$(BUILD_DIR)/$(PROJ_NAME): $(OBJECTS)
+	$(CC) $(CFLAGS) $^ -o $@
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf build
+	rm -rf $(BUILD_DIR)
