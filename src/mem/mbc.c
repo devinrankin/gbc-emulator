@@ -189,14 +189,59 @@ static void mbc1_write(mbc_t* mbc, uint16_t address, uint8_t value) {
 }
 
 static uint8_t mbc2_read(mbc_t* mbc, uint16_t address) {
-    (void)mbc;
-    (void)address;
-    return 0;
+    size_t bank;
+    size_t offset;
+
+    if(address < 0x4000) {
+        offset = address;
+        return read_rom(mbc, offset);
+    }
+
+    if(address < 0x8000) {
+        bank = mbc->rom_bank & 0x0F;
+
+        if(bank == 0) {
+            bank = 1;
+        }
+
+        offset = bank * ROM_BANK_SIZE + (address - 0x4000);
+        return read_rom(mbc, offset);
+    }
+
+    if(address >= 0xA000 && address < 0xC000) {
+        if(!mbc->ram_enabled) {
+            return 0xFF;
+        }
+
+        offset = (address - 0xA000) & 0x01FF;
+
+        return 0xF0 | read_ram(mbc, offset);
+    }
+
+    return 0xFF;
 }
+
 static void mbc2_write(mbc_t* mbc, uint16_t address, uint8_t value) {
-    (void)mbc;
-    (void)address;
-    (void)value;
+    if(address < 0x4000) {
+        /* Masking the least significant bit of the upper address byte */
+        if((address & 0x0100) == 0) {
+            /* Ram is enabled if and only if the lower 4 bits of value are $A */
+            mbc->ram_enabled = ((value & 0x0F) == 0x0A);
+        } else {
+            mbc->bank_low = value & 0x0F;
+        }
+
+        return;
+    }
+
+    if(address >= 0xA000 && address < 0xC000) {
+        if(!mbc->ram_enabled) {
+            return;
+        }
+
+        size_t offset = (address - 0xA000) & 0x01FF;
+        write_ram(mbc, offset, value & 0x0F);
+    }
 }
 
 static uint8_t mbc3_read(mbc_t* mbc, uint16_t address) {
