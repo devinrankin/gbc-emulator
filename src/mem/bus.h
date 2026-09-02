@@ -2,17 +2,20 @@
 #define BUS_H
 
 #include <stdint.h>
+
 #include "../common.h"
 #include "cartridge.h"
 
-#define BUS_VRAM_SIZE 16 * SIZE_KIB
-#define BUS_WRAM_SIZE 32 * SIZE_KIB
+/* TODO: write macros for memory blocks */
+
+#define BUS_VRAM_SIZE (16 * SIZE_KIB)
+#define BUS_WRAM_SIZE (32 * SIZE_KIB)
 #define BUS_OAM_SIZE 0xA0
 #define BUS_IO_SIZE 0x80 
 #define BUS_HRAM_SIZE 0x7F
 
-#define BUS_VRAM_BANK_SIZE 8 * SIZE_KIB
-#define BUS_WRAM_BANK_SIZE 4 * SIZE_KIB
+#define BUS_VRAM_BANK_SIZE (8 * SIZE_KIB)
+#define BUS_WRAM_BANK_SIZE (4 * SIZE_KIB)
 
 #define BUS_REG_VBK 0xFF4F
 #define BUS_REG_SVBK 0xFF70
