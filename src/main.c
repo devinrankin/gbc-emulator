@@ -1,14 +1,11 @@
-#include "cartridge.h"
-#include "gb.h"
+#include "mem/cartridge.h"
+#include "gbc.h"
 
 
-static emulator_t emulator;
+static gbc_t gbc;
 
-int main(int argc, char* argv[]) { 
-    cartridge_t cartridge;
-    cartridge_load_file(&cartridge, argv[1]);
-    cartridge_parse_header(&cartridge);
-    cartridge_display_info(&cartridge);
-
+int main(int argc, char* argv[]) {
+    gbc_init(&gbc, argv[1]);
+    cartridge_display_info(&gbc.cartridge);
     return 0;
 }
