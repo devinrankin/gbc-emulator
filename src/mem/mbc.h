@@ -31,6 +31,8 @@ struct mbc {
     size_t ram_size;
     
     uint8_t ram_enabled;
+    uint8_t ram_select;
+
     uint16_t rom_bank;
     uint8_t ram_bank;
 

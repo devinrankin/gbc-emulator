@@ -245,14 +245,97 @@ static void mbc2_write(mbc_t* mbc, uint16_t address, uint8_t value) {
 }
 
 static uint8_t mbc3_read(mbc_t* mbc, uint16_t address) {
-    (void)mbc;
-    (void)address;
-   return 0;
+    size_t bank;
+    size_t offset;
+
+    if(address < 0x4000) {
+        return read_rom(mbc, address);
+    }
+
+    if(address < 8000) {
+        bank = mbc->bank_low & 0x7F;
+
+        if(bank == 0) {
+            bank = 1;
+        }
+
+        offset = bank * ROM_BANK_SIZE + (address - 0x4000);
+
+        return read_rom(mbc, offset);
+    }
+
+    if (address >= 0xA000 && address < 0xC000) {
+        if(!mbc->ram_enabled) {
+            return 0xFF;
+        }
+
+        switch (mbc->ram_select) {
+            case 0x00:
+            case 0x01:
+            case 0x02:
+            case 0x03:
+                offset = (size_t)mbc->ram_select * RAM_BANK_SIZE + (address - 0xA000);
+                return read_ram(mbc, offset);
+            case 0x08:
+            case 0x09:
+            case 0x0A:
+            case 0x0B:
+            case 0x0C:
+                /* TODO: implement real-time clock (RTC) read */
+                break;
+            default:
+                return 0xFF;
+        }
+    }
+    return 0xFF;
 }
+
 static void mbc3_write(mbc_t* mbc, uint16_t address, uint8_t value) {
-    (void)mbc;
-    (void)address;
-    (void)value;
+    if (address < 0x2000) {
+        mbc->ram_enabled = ((value & 0x0F) == 0x0A);
+        return;
+    }
+
+    if (address < 0x4000) {
+        mbc->bank_low = value & 0x7F;
+        return;
+    }
+
+    if (address < 0x6000) {
+        mbc->ram_select = value;
+        return;
+    }
+
+    if (address < 0x8000) {
+        /* TODO: implement RTC latch */
+        return;
+    }
+
+    if (address >= 0xA000 && address < 0xC000) {
+        if(!mbc->ram_enabled) {
+            return;
+        }
+        
+        switch(mbc->ram_select) {
+            case 0x00:
+            case 0x01:
+            case 0x02:
+            case 0x03: {
+                size_t offset = (size_t)mbc->ram_select * RAM_BANK_SIZE + (address - 0xA000);
+                write_ram(mbc, offset, value);
+                return;
+            }
+            case 0x08:
+            case 0x09:
+            case 0x0A:
+            case 0x0B:
+            case 0x0C:
+                /* TODO: implement RTC write */
+                return;
+            default:
+                return;
+        }
+    }
 }
 
 
