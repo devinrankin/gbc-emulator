@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <time.h>
+
+#include "mbc_state.h"
 
 typedef enum mbc_type {
     MBC_TYPE_NONE,
@@ -29,19 +32,16 @@ struct mbc {
    
     size_t rom_size;
     size_t ram_size;
-    
-    uint8_t ram_enabled;
-    uint8_t ram_select;
-
-    uint16_t rom_bank;
-    uint8_t ram_bank;
 
     uint8_t (*read)(mbc_t* mbc, uint16_t address);
     void (*write)(mbc_t* mbc, uint16_t address, uint8_t value);
 
-    uint8_t banking_mode;
-    uint8_t bank_low;
-    uint8_t bank_high;
+    union {
+        mbc1_state_t mbc1;
+        mbc2_state_t mbc2;
+        mbc3_state_t mbc3;
+        mbc5_state_t mbc5;
+    } state;
 };
 
 void mbc_init(mbc_t* mbc, mbc_type_t type, const uint8_t* rom, size_t rom_size, uint8_t* ram, size_t ram_size);
