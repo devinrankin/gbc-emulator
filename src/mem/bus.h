@@ -20,6 +20,22 @@
 #define BUS_REG_VBK 0xFF4F
 #define BUS_REG_SVBK 0xFF70
 
+    /*
+     * Game Boy Color Memory Layout:
+     *  $0000 - $3FFF ROM (bank 0)
+     *  $4000 - $7FFF ROM (bank 1..n)
+     *  $8000 - $9FFF VRAM (bank 0 non-CGB, bank 0-1 CGB)
+     *  $A000 - $BFFF RAM (external from cartridge)
+     *  $C000 - $CFFF WRAM (bank 0)
+     *  $D000 - $DFFF WRAM (bank 1-7, CGB-only)
+     *  $E000 - $FDFF Echo RAM
+     *  $FE00 - $FE9F OAM (Object Attribute Memory)
+     *  $FEA0 - $FEFF Not Usable
+     *  $FF00 - $FF7F I/O Registers
+     *  $FF80 - $FFFE HRAM (High RAM)
+     *  $FFFF - $FFFF IE (Interrupt Enable Register)
+     */
+
 typedef struct {
     cartridge_t* cartridge;
 
@@ -44,5 +60,6 @@ uint8_t bus_read8(bus_t* bus, uint16_t address);
 void bus_write8(bus_t* bus, uint16_t address, uint8_t value);
 
 uint16_t bus_read16(bus_t* bus, uint16_t address);
+void bus_write16(bus_t* bus, uint16_t address, uint16_t value);
 
 #endif

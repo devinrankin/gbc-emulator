@@ -59,9 +59,10 @@ void bus_init(bus_t* bus, cartridge_t* cartridge) {
     bus->interrupt_enable = 0;
 }
 
+/* Returns a byte from a pre-defined block of memory pointed to by the specified address. */
 uint8_t bus_read8(bus_t* bus, uint16_t address) {
     if(address < 0x8000 || (address >= 0xA000 && address < 0xC000)) {
-        return cartridge_read8(bus->cartridge, address);
+        return cartridge_read(bus->cartridge, address);
     }
 
     if(address < 0xA000) {
@@ -107,9 +108,10 @@ uint8_t bus_read8(bus_t* bus, uint16_t address) {
     return bus->interrupt_enable;
 }
 
+/* Attempts to write a byte to a pre-defined block of memory pointed to by the specified address. */
 void bus_write8(bus_t* bus, uint16_t address, uint8_t value) {
     if(address < 0x8000 || (address >= 0xA000 && address < 0xC000)) {
-        cartridge_write8(bus->cartridge, address, value);
+        cartridge_write(bus->cartridge, address, value);
         return;
     }
 
@@ -170,4 +172,9 @@ uint16_t bus_read16(bus_t* bus, uint16_t address) {
     uint8_t high = bus_read8(bus, address + 1);
 
     return (uint16_t)((high << 8) | low);
+}
+
+void bus_write16(bus_t* bus, uint16_t address, uint16_t value) {
+    bus_write8(bus, address, value & 0xFF);
+    bus_write8(bus, address + 1, value >> 8);
 }
