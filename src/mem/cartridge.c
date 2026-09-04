@@ -23,11 +23,11 @@ void cartridge_display_info(cartridge_t* cartridge) {
     printf("\tRAM Size    : %2.2x\n", cartridge->header.ram_size);
 }
 
-uint8_t cartridge_read8(cartridge_t* cartridge, uint16_t address) {
+uint8_t cartridge_read(cartridge_t* cartridge, uint16_t address) {
    return cartridge->mbc.read(&cartridge->mbc, address); 
 }
 
-void cartridge_write8(cartridge_t* cartridge, uint16_t address, uint8_t value) {
+void cartridge_write(cartridge_t* cartridge, uint16_t address, uint8_t value) {
     cartridge->mbc.write(&cartridge->mbc, address, value);
 }
 
@@ -82,7 +82,7 @@ static mbc_type_t cartridge_identify_mbc_type(uint8_t type) {
 }
 
 static void cartridge_parse_header(cartridge_t* cartridge) {
-    uint8_t* rom = cartridge->rom;
+    const uint8_t* rom = cartridge->rom;
 
     cartridge_parse_title(cartridge);
     cartridge->header.cgb_flag = rom[CART_HDR_CGB_FLAG];
@@ -132,4 +132,3 @@ static bool cartridge_load_file(cartridge_t* cartridge, const char* path) {
     cartridge->rom_size = size;
     return true;
 }
-

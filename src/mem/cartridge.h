@@ -105,8 +105,7 @@ typedef struct cartridge {
 void cartridge_init(cartridge_t* cartridge, const char* path);
 void cartridge_display_info(cartridge_t* cartridge);
 
-uint8_t cartridge_read8(cartridge_t* cartridge, uint16_t address);
-void cartridge_write8(cartridge_t* cartridge, uint16_t address, uint8_t value);
-uint16_t cartridge_read16(cartridge_t* cartridge, uint16_t address);
+uint8_t cartridge_read(cartridge_t* cartridge, uint16_t address);
+void cartridge_write(cartridge_t* cartridge, uint16_t address, uint8_t value);
 
 #endif
