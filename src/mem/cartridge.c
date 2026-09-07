@@ -29,7 +29,7 @@ void cartridge_display_info(cartridge_t* cartridge) {
     printf("\tTitle       : %s\n", cartridge->header.title);
     printf("\tMapper Type : %2.2x\n", cartridge->header.cartridge_type);
     printf("\tROM Size    : %lu B\n", cartridge->rom_size);
-    printf("\tRAM Size    : %2.2x\n", cartridge->header.ram_size);
+    printf("\tRAM Size    : %lu B\n", cartridge->ram_size);
 }
 
 /* Returns a byte from the cartridge using the member MBC's read. */
