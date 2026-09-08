@@ -2,20 +2,34 @@
 #include "sm83_opcodes.h"
 
 /* Fetches the next byte in ROM and increments the program counter. */
-static uint8_t sm83_fetch8(sm83_t* sm83) {
-    uint8_t value = bus_read8(sm83->bus, sm83->registers.pc);
-    sm83->registers.pc++;
+static uint8_t sm83_fetch8(sm83_t* sm83);
 
-    return value;
-}
-
-void sm83_init(sm83_t* sm83) {
+void sm83_init(sm83_t* sm83, bus_t* bus) {
     *sm83 = (sm83_t) {
         .state = SM83_STATE_RESET,
         .halted = false,
-        .registers = {0}
+        .registers = {0},
+        .total_cycles = 0
     };
     sm83->registers.pc = 0x150;
+    
+    sm83->bus = bus;
+}
+
+/* Perform one step of the fetch, decode, execute loop. */
+uint32_t sm83_step(sm83_t* sm83) {
+/* TODO: Implement full step logic after opcode table completed */
+    uint32_t cycles;
+    
+    if (sm83->halted) {
+        cycles = 4;
+    } else {
+        uint8_t opcode = sm83_fetch8(sm83);
+        cycles = (sm83_opcode_table[opcode].handler)(sm83, opcode);
+    }
+
+    sm83->total_cycles += cycles;
+    return cycles;
 }
 
 /* Returns the contents of an 8-bit register, or a byte at the address pointed to by the contents of the 16-bit HL register. */
@@ -83,16 +97,6 @@ void sm83_write_r16(sm83_t* sm83, uint8_t pair, uint16_t value) {
     }
 }
 
-/* Perform one step of the fetch, decode, execute loop. */
-void sm83_step(sm83_t* sm83) {
-/* TODO: Implement full step logic after opcode table completed */
-    if (sm83->halted) {
-        return;
-    }
-
-    uint8_t opcode = sm83_fetch8(sm83);
-}
-
 /* Returns one of the Z, N, H, or C flags.
  * Compatible macros: SM83_FLAG_Z, SM83_FLAG_N, SM83_FLAG_H, SM83_FLAG_C. */
 bool sm83_get_flag(sm83_t* sm83, uint8_t flag) {
@@ -101,9 +105,14 @@ bool sm83_get_flag(sm83_t* sm83, uint8_t flag) {
 
 /* Given a mask of affected flags and their new values, updates the flag register. */
 void sm83_update_flags(sm83_t* sm83, uint8_t mask, uint8_t values) {
-    sm83->registers.f = 
-        (sm83->registers.f & (uint8_t)~mask) |
-        (values & mask);
+    sm83->registers.f = (sm83->registers.f & (uint8_t)~mask) | (values & mask);
 
     sm83->registers.f &= SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C;
+}
+
+static uint8_t sm83_fetch8(sm83_t* sm83) {
+    uint8_t value = bus_read8(sm83->bus, sm83->registers.pc);
+    sm83->registers.pc++;
+
+    return value;
 }
