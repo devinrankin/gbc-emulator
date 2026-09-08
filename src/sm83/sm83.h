@@ -3,11 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-
 #include "../mem/bus.h"
-
-#define SM83_GB_CLOCK_HZ (4194304u)
-#define SM83_CGB_CLOCK_HZ (8388608u)
 
 #define SM83_REGISTER_IDX_A 7
 #define SM83_REGISTER_PAIR_HL 2
@@ -36,19 +32,20 @@ typedef enum {
     SM83_STATE_HALTED
 } sm83_state_t;
 
-typedef struct sm83 sm83_t;
-
-struct sm83 {
+typedef struct sm83 {
     sm83_state_t state;
     registers_t registers;
+    
     bus_t* bus;
+
+    uint64_t total_cycles;
 
     bool halted;
     bool ime;
-};
+} sm83_t;
 
-void sm83_init(sm83_t* sm83);
-void sm83_step(sm83_t* sm83);
+void sm83_init(sm83_t* sm83, bus_t* bus);
+uint32_t sm83_step(sm83_t* sm83);
 void sm83_run(uint8_t* rom, sm83_t* sm83);
 
 bool sm83_get_flag(sm83_t* sm83, uint8_t flag);
