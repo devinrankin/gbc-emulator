@@ -7,16 +7,23 @@ void timer_init(gbc_timer_t *timer) {
 }
 
 void timer_tick(gbc_timer_t* timer) {
+    uint16_t prev_div = timer->div;
+    timer->div++;
+
     bool timer_updated = false;
     switch (TAC_CLOCK_SELECT(timer->tac)) {
         case 0x00:
-            timer_updated = check_falling_edge(timer->div, timer->div++, TIMER_TAC_SELECT_4096HZ);
+            timer_updated = check_falling_edge(prev_div, timer->div, TIMER_TAC_SELECT_4096HZ);
+            break;
         case 0x01:
-            timer_updated = check_falling_edge(timer->div, timer->div++, TIMER_TAC_SELECT_262144HZ);
+            timer_updated = check_falling_edge(prev_div, timer->div, TIMER_TAC_SELECT_262144HZ);
+            break;
         case 0x02: 
-            timer_updated = check_falling_edge(timer->div, timer->div++, TIMER_TAC_SELECT_65536HZ);
+            timer_updated = check_falling_edge(prev_div, timer->div, TIMER_TAC_SELECT_65536HZ);
+            break;
         case 0x03:
-            timer_updated = check_falling_edge(timer->div, timer->div++, TIMER_TAC_SELECT_16384HZ);
+            timer_updated = check_falling_edge(prev_div, timer->div, TIMER_TAC_SELECT_16384HZ);
+            break;
     }
 
     if (timer_updated && TAC_TIMER_ENABLED(timer->tac)) {
