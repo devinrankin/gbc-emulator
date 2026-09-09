@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "../mem/bus.h"
+#include "../bus.h"
 
 #define SM83_REGISTER_IDX_A 7
 #define SM83_REGISTER_PAIR_HL 2
@@ -27,6 +27,7 @@ typedef struct {
 } registers_t;
 
 typedef enum {
+    SM83_STATE_INIT,
     SM83_STATE_RESET,
     SM83_STATE_RUNNING,
     SM83_STATE_HALTED
@@ -45,6 +46,9 @@ typedef struct sm83 {
 } sm83_t;
 
 void sm83_init(sm83_t* sm83, bus_t* bus);
+void sm83_reset(sm83_t* sm83);
+void sm83_dump(sm83_t* sm83);
+
 uint32_t sm83_step(sm83_t* sm83);
 void sm83_run(uint8_t* rom, sm83_t* sm83);
 

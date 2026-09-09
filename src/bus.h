@@ -3,8 +3,8 @@
 
 #include <stdint.h>
 
-#include "../common.h"
-#include "cartridge.h"
+#include "mem/cartridge.h"
+#include "timer.h"
 
 /* TODO: write macros for memory blocks */
 
@@ -38,6 +38,7 @@
 
 typedef struct {
     cartridge_t* cartridge;
+    gbc_timer_t* timer;
 
     uint8_t vram[BUS_VRAM_SIZE];
     uint8_t wram[BUS_WRAM_SIZE];
@@ -54,7 +55,7 @@ typedef struct {
     uint8_t interrupt_enable;
 } bus_t;
 
-void bus_init(bus_t* bus, cartridge_t* cartridge);
+void bus_init(bus_t* bus, cartridge_t* cartridge, gbc_timer_t* timer);
 
 uint8_t bus_read8(bus_t* bus, uint16_t address);
 void bus_write8(bus_t* bus, uint16_t address, uint8_t value);
