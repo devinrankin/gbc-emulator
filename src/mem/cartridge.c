@@ -21,7 +21,7 @@ void cartridge_init(cartridge_t* cartridge, const char* path) {
     cartridge->ram_size = cartridge_get_ram_size(cartridge->header.ram_size);
 
     mbc_type_t type = cartridge_identify_mbc_type(cartridge->header.cartridge_type);
-    mbc_init(&cartridge->mbc, type, cartridge->rom, cartridge->rom_size, cartridge->ram, cartridge->ram_size);
+    mbc_init(&cartridge->mbc, type, cartridge->rom, cartridge->ram);
 }
 
 void cartridge_display_info(cartridge_t* cartridge) {
