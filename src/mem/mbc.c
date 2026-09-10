@@ -24,18 +24,20 @@ static void mbc6_write(mbc_t* mbc, uint16_t address, uint8_t value);
 static uint8_t mbc7_read(mbc_t* mbc, uint16_t address);
 static void mbc7_write(mbc_t* mbc, uint16_t address, uint8_t value);
 
-static uint8_t read_rom(mbc_t* mbc, size_t offset);
-static uint8_t read_ram(mbc_t* mbc, size_t offset);
-static void write_ram(mbc_t* mbc, size_t offset, uint8_t value);
+static uint8_t rom_read(mbc_t* mbc, size_t offset);
+static uint8_t ram_read(mbc_t* mbc, size_t offset);
+static void ram_write(mbc_t* mbc, size_t offset, uint8_t value);
 
-void mbc_init(mbc_t* mbc, mbc_type_t type, const uint8_t* rom, size_t rom_size, uint8_t* ram, size_t ram_size) {
+static uint8_t rtc_read(mbc_t* mbc, uint8_t register_id);
+static void rtc_write(mbc_t* mbc, uint8_t value);
+static void rtc_update(mbc_t* mbc, uint64_t now);
+
+void mbc_init(mbc_t* mbc, mbc_type_t type, const uint8_t* rom, uint8_t* ram) {
     *mbc = (mbc_t){0};
 
     mbc->type = type;
     mbc->rom = rom;
-    mbc->rom_size = rom_size;
     mbc->ram = ram;
-    mbc->ram_size = ram_size;
 
     switch(type) {
         case MBC_TYPE_NONE:
@@ -92,11 +94,11 @@ void mbc_write(mbc_t* mbc, uint16_t address, uint8_t value) {
 
 static uint8_t mbc0_read(mbc_t* mbc, uint16_t address) {
     if (address < 0x8000) {
-        return read_rom(mbc, address);  
+        return rom_read(mbc, address);  
     }
 
     if (address >= 0xA000 && address < 0xC000) {
-        return read_ram(mbc, address - 0xA000);
+        return ram_read(mbc, address - 0xA000);
     }
 
     return 0xFF;
@@ -121,7 +123,7 @@ static uint8_t mbc1_read(mbc_t* mbc, uint16_t address) {
             bank = (size_t)(state->bank_high & 0x03) << 5;
 
         offset = bank * ROM_BANK_SIZE + address;
-        return read_rom(mbc, offset);
+        return rom_read(mbc, offset);
     }
 
     if (address < 0x8000) {
@@ -131,7 +133,7 @@ static uint8_t mbc1_read(mbc_t* mbc, uint16_t address) {
             bank++;
 
         offset = bank * ROM_BANK_SIZE + (address - 0x4000);
-        return read_rom(mbc, offset);
+        return rom_read(mbc, offset);
     }
 
     if (address >= 0xA000 && address < 0xC000) {
@@ -144,7 +146,7 @@ static uint8_t mbc1_read(mbc_t* mbc, uint16_t address) {
             bank = state->bank_high & 0x03;
         
         offset = bank * RAM_BANK_SIZE + (address - 0xA000);
-        return read_ram(mbc, offset);
+        return ram_read(mbc, offset);
     }
 
     return 0xFF;
@@ -184,7 +186,7 @@ static void mbc1_write(mbc_t* mbc, uint16_t address, uint8_t value) {
 
         size_t offset = bank * RAM_BANK_SIZE + (address - 0xA000);
 
-        write_ram(mbc, offset, value);
+        ram_write(mbc, offset, value);
         return;
     }
 }
@@ -197,7 +199,7 @@ static uint8_t mbc2_read(mbc_t* mbc, uint16_t address) {
 
     if (address < 0x4000) {
         offset = address;
-        return read_rom(mbc, offset);
+        return rom_read(mbc, offset);
     }
 
     if (address < 0x8000) {
@@ -208,7 +210,7 @@ static uint8_t mbc2_read(mbc_t* mbc, uint16_t address) {
         }
 
         offset = bank * ROM_BANK_SIZE + (address - 0x4000);
-        return read_rom(mbc, offset);
+        return rom_read(mbc, offset);
     }
 
     if (address >= 0xA000 && address < 0xC000) {
@@ -218,7 +220,7 @@ static uint8_t mbc2_read(mbc_t* mbc, uint16_t address) {
 
         offset = (address - 0xA000) & 0x01FF;
 
-        return 0xF0 | (read_ram(mbc, offset) & 0x0F);
+        return 0xF0 | (ram_read(mbc, offset) & 0x0F);
     }
 
     return 0xFF;
@@ -245,7 +247,7 @@ static void mbc2_write(mbc_t* mbc, uint16_t address, uint8_t value) {
         }
 
         size_t offset = (address - 0xA000) & 0x01FF;
-        write_ram(mbc, offset, value & 0x0F);
+        ram_write(mbc, offset, value & 0x0F);
     }
 }
 
@@ -256,7 +258,7 @@ static uint8_t mbc3_read(mbc_t* mbc, uint16_t address) {
     size_t offset;
 
     if (address < 0x4000) {
-        return read_rom(mbc, address);
+        return rom_read(mbc, address);
     }
 
     if (address < 0x8000) {
@@ -268,7 +270,7 @@ static uint8_t mbc3_read(mbc_t* mbc, uint16_t address) {
 
         offset = bank * ROM_BANK_SIZE + (address - 0x4000);
 
-        return read_rom(mbc, offset);
+        return rom_read(mbc, offset);
     }
 
     if (address >= 0xA000 && address < 0xC000) {
@@ -282,14 +284,13 @@ static uint8_t mbc3_read(mbc_t* mbc, uint16_t address) {
             case 0x02:
             case 0x03:
                 offset = (size_t)state->ram_rtc_select * RAM_BANK_SIZE + (address - 0xA000);
-                return read_ram(mbc, offset);
+                return ram_read(mbc, offset);
             case 0x08:
             case 0x09:
             case 0x0A:
             case 0x0B:
             case 0x0C:
-                /* TODO: implement real-time clock (RTC) read */
-                break;
+                return rtc_read(mbc, state->ram_rtc_select);
             default:
                 return 0xFF;
         }
@@ -331,7 +332,7 @@ static void mbc3_write(mbc_t* mbc, uint16_t address, uint8_t value) {
             case 0x02:
             case 0x03: {
                 size_t offset = (size_t)state->ram_rtc_select * RAM_BANK_SIZE + (address - 0xA000);
-                write_ram(mbc, offset, value);
+                ram_write(mbc, offset, value);
                 return;
             }
             case 0x08:
@@ -339,7 +340,7 @@ static void mbc3_write(mbc_t* mbc, uint16_t address, uint8_t value) {
             case 0x0A:
             case 0x0B:
             case 0x0C:
-
+                rtc_write(mbc, value); 
                 return;
             default:
                 return;
@@ -350,10 +351,11 @@ static void mbc3_write(mbc_t* mbc, uint16_t address, uint8_t value) {
 static uint8_t mbc5_read(mbc_t* mbc, uint16_t address) {
     (void)mbc;
     (void)address;
-   return 0;
+    return 0;
 }
+
 static void mbc5_write(mbc_t* mbc, uint16_t address, uint8_t value) {
-     (void)mbc;
+    (void)mbc;
     (void)address;
     (void)value;   
 }
@@ -361,8 +363,9 @@ static void mbc5_write(mbc_t* mbc, uint16_t address, uint8_t value) {
 static uint8_t mbc6_read(mbc_t* mbc, uint16_t address) {
     (void)mbc;
     (void)address;
-   return 0;
+    return 0;
 }
+
 static void mbc6_write(mbc_t* mbc, uint16_t address, uint8_t value) {
     (void)mbc;
     (void)address;
@@ -372,24 +375,123 @@ static void mbc6_write(mbc_t* mbc, uint16_t address, uint8_t value) {
 static uint8_t mbc7_read(mbc_t* mbc, uint16_t address) {
     (void)mbc;
     (void)address;
-   return 0;
+    return 0;
 }
+
 static void mbc7_write(mbc_t* mbc, uint16_t address, uint8_t value) {
     (void)mbc;
     (void)address;
     (void)value;
 }
 
-static uint8_t read_rom(mbc_t* mbc, size_t offset) {
+static uint8_t rom_read(mbc_t* mbc, size_t offset) {
     return mbc->rom[offset];
 }
 
-static uint8_t read_ram(mbc_t* mbc, size_t offset) {
+static uint8_t ram_read(mbc_t* mbc, size_t offset) {
     return mbc->ram[offset];
 }
 
-static void write_ram(mbc_t* mbc, size_t offset, uint8_t value) {
+static void ram_write(mbc_t* mbc, size_t offset, uint8_t value) {
     mbc->ram[offset] = value;
 }
 
+static uint8_t rtc_read(mbc_t* mbc, uint8_t register_id) {
+    mbc3_state_t *state = &mbc->state.mbc3;
+    
+    const struct rtc* rtc = state->rtc_latched ? &state->latched_rtc : &state->current_rtc;
 
+    switch(register_id) {
+        case 0x08: return rtc->seconds;
+        case 0x09: return rtc->minutes;
+        case 0x0A: return rtc->hours;
+        case 0x0B: return rtc->days_low;
+        case 0x0C: return rtc->days_high;
+        default: return 0xFF;
+    }
+}
+
+static void rtc_write(mbc_t* mbc, uint8_t value) {
+    mbc3_state_t *state = &mbc->state.mbc3;
+
+    if (state->rtc_latch_value == 0x00 && value == 0x01) {
+        state->latched_rtc = state->current_rtc;
+    }
+
+    state->rtc_latch_value = value;
+}
+
+static void rtc_update(mbc_t* mbc, uint64_t now) {
+    mbc3_state_t *state = &mbc->state.mbc3;
+
+    uint64_t elapsed;
+    uint16_t days;
+    
+    if (state->last_timestamp == 0) {
+        state->last_timestamp = now;
+        return;
+    }
+
+    if (state->current_rtc.days_high & 0x40) {
+        state->last_timestamp = now;
+        return;
+    }
+
+    elapsed = now - state->last_timestamp;
+    if (elapsed <= 0) {
+        return;
+    }
+
+    state->last_timestamp = now;
+
+    while(elapsed >= 86400) {
+        elapsed -= 86400;
+
+        days = ((state->current_rtc.days_high & 1) << 8) | state->current_rtc.days_low;
+
+        if (days == 511) {
+            days = 0;
+            state->current_rtc.days_high |= 0x80;
+        } else {
+            days++;
+        }
+
+        state->current_rtc.days_low = days & 0xFF;
+        state->current_rtc.days_high = (state->current_rtc.days_high & 0xFE) | ((days >> 8) & 1);
+    }
+
+    while (elapsed >= 3600) {
+        elapsed -= 3600;
+        state->current_rtc.hours++;
+    }
+
+    while (state->current_rtc.hours >= 24) {
+        state->current_rtc.hours -= 24;
+        state->current_rtc.days_low++;
+    
+        uint16_t days = ((state->current_rtc.days_high & 1) << 8) | state->current_rtc.days_low;
+
+        if(days > 511) {
+            days = 0;
+            state->current_rtc.days_high |= 0x80;
+        }
+
+        state->current_rtc.days_low = days & 0xFF;
+        state->current_rtc.days_high = (state->current_rtc.days_high & 0xFE) | ((days >> 8) & 1);
+    }
+
+    state->current_rtc.minutes += elapsed / 60;
+    elapsed %= 60;
+    
+    if(state->current_rtc.minutes >= 60) {
+        state->current_rtc.minutes -= 60;
+        state->current_rtc.hours++;
+    }
+
+    state->current_rtc.seconds += elapsed;
+
+    if(state->current_rtc.seconds >= 60) {
+        state->current_rtc.seconds -= 60;
+        state->current_rtc.minutes++;
+    }
+}

@@ -17,19 +17,24 @@ typedef struct {
 } mbc2_state_t;
 
 typedef struct {
-    uint8_t rom_bank;
-    uint8_t ram_rtc_select;
-    bool ram_enabled;
-
-    struct {
+    struct rtc {
         uint8_t seconds;
         uint8_t minutes;
         uint8_t hours;
         uint8_t days_low;
-        uint8_t control;
-    } rtc;
+        uint8_t days_high;
+    };
 
+    uint8_t rom_bank;
+    uint8_t ram_rtc_select;
+    bool ram_enabled;
+
+    struct rtc current_rtc;
+    struct rtc latched_rtc;
+   
     bool rtc_latched;
+    uint8_t rtc_latch_value;
+    uint64_t last_timestamp;
 } mbc3_state_t;
 
 typedef struct {

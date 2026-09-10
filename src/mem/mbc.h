@@ -29,9 +29,6 @@ struct mbc {
 
     const uint8_t* rom;
     uint8_t* ram;
-   
-    size_t rom_size;
-    size_t ram_size;
 
     uint8_t (*read)(mbc_t* mbc, uint16_t address);
     void (*write)(mbc_t* mbc, uint16_t address, uint8_t value);
@@ -44,7 +41,7 @@ struct mbc {
     } state;
 };
 
-void mbc_init(mbc_t* mbc, mbc_type_t type, const uint8_t* rom, size_t rom_size, uint8_t* ram, size_t ram_size);
+void mbc_init(mbc_t* mbc, mbc_type_t type, const uint8_t* rom, uint8_t* ram);
 uint8_t mbc_read(mbc_t* mbc, uint16_t address);
 void mbc_write(mbc_t* mbc, uint16_t address, uint8_t value);
 
