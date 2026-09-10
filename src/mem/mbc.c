@@ -33,11 +33,11 @@ static void rtc_write(mbc_t* mbc, uint8_t value);
 static void rtc_update(mbc_t* mbc, uint64_t now);
 
 void mbc_init(mbc_t* mbc, mbc_type_t type, const uint8_t* rom, uint8_t* ram) {
-    *mbc = (mbc_t){0};
-
-    mbc->type = type;
-    mbc->rom = rom;
-    mbc->ram = ram;
+    *mbc = (mbc_t){ 
+        mbc->type = type,
+        mbc->rom = rom,
+        mbc->ram = ram
+    };
 
     switch(type) {
         case MBC_TYPE_NONE:

@@ -9,14 +9,14 @@ static void bus_set_vram_bank(bus_t* bus, uint8_t value);
 static void bus_set_wram_bank(bus_t* bus, uint8_t value);
 
 void bus_init(bus_t* bus, cartridge_t* cartridge, gbc_timer_t* timer) {
-    bus->cartridge = cartridge;
-    bus->timer = timer;
-
-    bus->vram_bank = 0;
-    bus->wram_bank = 1;
-
-    bus->interrupt_flags = 0;
-    bus->interrupt_enable = 0;
+    *bus = (bus_t) {
+        .cartridge = cartridge,
+        .timer = timer,
+        .vram_bank = 0,
+        .wram_bank = 1,
+        .interrupt_flags = 0,
+        .interrupt_enable = 0
+    };
 }
 
 /* Returns a byte from a pre-defined block of memory pointed to by the specified address. */
