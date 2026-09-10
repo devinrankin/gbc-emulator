@@ -6,7 +6,7 @@ static uint8_t sm83_fetch8(sm83_t* sm83);
 
 void sm83_init(sm83_t* sm83, bus_t* bus) {
     *sm83 = (sm83_t) {
-        .state = SM83_STATE_RESET,
+        .state = SM83_STATE_INIT,
         .halted = false,
         .registers = {0},
         .total_cycles = 0
@@ -16,6 +16,26 @@ void sm83_init(sm83_t* sm83, bus_t* bus) {
     sm83->bus = bus;
 }
 
+void sm83_dump(sm83_t* sm83) {
+    printf("Dumping SM83...\n");
+
+    printf("State: %d\n", sm83->state);
+    printf("Halted: %b\n", sm83->halted);
+    printf("Total Cycles Elapsed: %lu\n\n", sm83->total_cycles);
+    printf("Registers: \n");
+    printf("\tPC: %u\n", sm83->registers.pc);
+    printf("\tSP: %u\n", sm83->registers.sp);
+    printf("\tB: %u", sm83->registers.b);
+    printf("\tC: %u", sm83->registers.c);
+    printf("\tD: %u", sm83->registers.d);
+    printf("\tE: %u", sm83->registers.e);
+    printf("\tH: %u", sm83->registers.h);
+    printf("\tL: %u", sm83->registers.l);
+    printf("\tA: %u", sm83->registers.a);
+    printf("\tF: %u", sm83->registers.f);
+}
+
+/* TODO: Implement IE & IF (Bus) and IME (internal) register check */
 /* Perform one step of the fetch, decode, execute loop. */
 uint32_t sm83_step(sm83_t* sm83) {
 /* TODO: Implement full step logic after opcode table completed */
@@ -98,15 +118,17 @@ void sm83_write_r16(sm83_t* sm83, uint8_t pair, uint16_t value) {
 }
 
 /* Returns one of the Z, N, H, or C flags.
- * Compatible macros: SM83_FLAG_Z, SM83_FLAG_N, SM83_FLAG_H, SM83_FLAG_C. */
+ * Compatible masks: SM83_FLAG_Z, SM83_FLAG_N, SM83_FLAG_H, SM83_FLAG_C. */
 bool sm83_get_flag(sm83_t* sm83, uint8_t flag) {
     return (sm83->registers.f & flag) != 0;
 }
 
-/* Given a mask of affected flags and their new values, updates the flag register. */
+/* Given a mask of affected flags and their new values, updates the flag register. 
+ * Example usage: sm83_update_flags(sm83, SM83_FLAG_N | SM83_FLAG_C, n | c) */
 void sm83_update_flags(sm83_t* sm83, uint8_t mask, uint8_t values) {
     sm83->registers.f = (sm83->registers.f & (uint8_t)~mask) | (values & mask);
 
+    /* Ensures the lower 4 bits of F to 0 should the above arithmetic set them. */
     sm83->registers.f &= SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C;
 }
 

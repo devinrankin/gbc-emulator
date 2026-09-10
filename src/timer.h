@@ -17,9 +17,6 @@
 #define TIMER_TAC_SELECT_65536HZ 5
 #define TIMER_TAC_SELECT_16384HZ 7
 
-#define TIMER_CLOCK_FREQ 4194304u
-#define TIMER_CGB_CLOCK_FREQ 8388608u
-
 typedef struct {
     uint16_t div;
     uint8_t tima;
