@@ -53,7 +53,7 @@ uint32_t sm83_step(sm83_t* sm83) {
 }
 
 /* Returns the contents of an 8-bit register, or a byte at the address pointed to by the contents of the 16-bit HL register. */
-uint8_t sm83_read_r8_or_hl(sm83_t* sm83, uint8_t index) {
+uint8_t sm83_read_r8(sm83_t* sm83, uint8_t index) {
     switch (index) {
         case 0: return sm83->registers.b;
         case 1: return sm83->registers.c;
@@ -61,7 +61,7 @@ uint8_t sm83_read_r8_or_hl(sm83_t* sm83, uint8_t index) {
         case 3: return sm83->registers.e;
         case 4: return sm83->registers.h;
         case 5: return sm83->registers.l;
-        case 6: return bus_read8(sm83->bus, sm83_read_r16(sm83, SM83_REGISTER_PAIR_HL));
+        case 6: return bus_read8(sm83->bus, sm83_read_r16(sm83, SM83_REGISTER_HL));
         case 7: return sm83->registers.a;
         default:
             NO_IMPL
@@ -69,7 +69,7 @@ uint8_t sm83_read_r8_or_hl(sm83_t* sm83, uint8_t index) {
 }
 
 /* Stores a value into an 8-bit register, or into the address pointed to by the contents of the 16-bit HL register. */
-void sm83_write_r8_or_hl(sm83_t* sm83, uint8_t index, uint8_t value) {
+void sm83_write_r8(sm83_t* sm83, uint8_t index, uint8_t value) {
     switch (index) {
         case 0: sm83->registers.b = value; break;
         case 1: sm83->registers.c = value; break;
@@ -77,7 +77,7 @@ void sm83_write_r8_or_hl(sm83_t* sm83, uint8_t index, uint8_t value) {
         case 3: sm83->registers.e = value; break;
         case 4: sm83->registers.h = value; break;
         case 5: sm83->registers.l = value; break;
-        case 6: bus_write8(sm83->bus, sm83_read_r16(sm83, SM83_REGISTER_PAIR_HL), value); break;
+        case 6: bus_write8(sm83->bus, sm83_read_r16(sm83, SM83_REGISTER_HL), value); break;
         default:
             NO_IMPL
     }
