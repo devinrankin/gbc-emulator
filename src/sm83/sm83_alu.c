@@ -28,6 +28,35 @@ uint8_t alu_execute(sm83_t *sm83, sm83_alu_op_t operation, uint8_t lhs, uint8_t 
     }
 }
 
+uint16_t alu_add16(sm83_t* sm83, uint16_t lhs, uint16_t rhs) {
+    uint32_t sum = (uint32_t)lhs + (uint32_t)rhs;
+    uint16_t result = (uint16_t)sum;
+
+    uint8_t flags = 0;
+
+    if (((lhs & 0x0FFF) + (rhs & 0x0FFF)) > 0x0FFF) flags |= SM83_FLAG_H;
+    if (sum > 0xFFFF) flags |= SM83_FLAG_C;
+
+    sm83_update_flags(sm83, SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+
+    return result;
+}
+
+uint16_t alu_add_sp_i8(sm83_t* sm83, uint16_t sp, int8_t offset) {
+    uint8_t immediate = (uint8_t)offset;
+
+    uint16_t result = (uint16_t)((int32_t)sp + offset);
+
+    uint8_t flags = 0;
+
+    if (((sp & 0x000F) + (immediate & 0x0F)) > 0x0F) flags |= SM83_FLAG_H;
+    if (((sp & 0x00FF) + immediate) > 0xFF) flags |= SM83_FLAG_C;
+
+    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+
+    return result;
+}
+
 static uint8_t alu_add(sm83_t* sm83, uint8_t lhs, uint8_t rhs, uint8_t carry_in) {
     uint16_t result = lhs + rhs + carry_in;
 
