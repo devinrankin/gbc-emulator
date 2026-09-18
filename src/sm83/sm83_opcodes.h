@@ -16,7 +16,6 @@ typedef unsigned (*sm83_opcode_handler_t)(sm83_t* sm83, uint8_t opcode);
 typedef struct {
     sm83_opcode_handler_t handler;
     uint8_t length;
-    uint8_t cycles;
     const char* name; 
 } sm83_instruction_t;
 

@@ -5,8 +5,11 @@
 #include <stdbool.h>
 #include "../bus.h"
 
-#define SM83_REGISTER_IDX_A 7
-#define SM83_REGISTER_PAIR_HL 2
+#define SM83_R8_A 7
+#define SM83_R8_HLMEM 6
+
+#define SM83_R16_HL 2
+#define SM83_R16_SP 3
 
 #define SM83_FLAG_Z 0x80
 #define SM83_FLAG_N 0x40
@@ -55,8 +58,8 @@ void sm83_run(uint8_t* rom, sm83_t* sm83);
 bool sm83_get_flag(sm83_t* sm83, uint8_t flag);
 void sm83_update_flags(sm83_t* sm83, uint8_t mask, uint8_t values);
 
-uint8_t sm83_read_r8_or_hl(sm83_t* sm83, uint8_t index);
-void sm83_write_r8_or_hl(sm83_t* sm83, uint8_t index, uint8_t value);
+uint8_t sm83_read_r8(sm83_t* sm83, uint8_t index);
+void sm83_write_r8(sm83_t* sm83, uint8_t index, uint8_t value);
 
 uint16_t sm83_read_r16(sm83_t* sm83, uint8_t pair);
 void sm83_write_r16(sm83_t* sm83, uint8_t pair, uint16_t value);

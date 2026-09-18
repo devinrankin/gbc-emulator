@@ -61,7 +61,7 @@ uint8_t sm83_read_r8(sm83_t* sm83, uint8_t index) {
         case 3: return sm83->registers.e;
         case 4: return sm83->registers.h;
         case 5: return sm83->registers.l;
-        case 6: return bus_read8(sm83->bus, sm83_read_r16(sm83, SM83_REGISTER_HL));
+        case 6: return bus_read8(sm83->bus, sm83_read_r16(sm83, SM83_R16_HL));
         case 7: return sm83->registers.a;
         default:
             NO_IMPL
@@ -77,7 +77,7 @@ void sm83_write_r8(sm83_t* sm83, uint8_t index, uint8_t value) {
         case 3: sm83->registers.e = value; break;
         case 4: sm83->registers.h = value; break;
         case 5: sm83->registers.l = value; break;
-        case 6: bus_write8(sm83->bus, sm83_read_r16(sm83, SM83_REGISTER_HL), value); break;
+        case 6: bus_write8(sm83->bus, sm83_read_r16(sm83, SM83_R16_HL), value); break;
         default:
             NO_IMPL
     }
