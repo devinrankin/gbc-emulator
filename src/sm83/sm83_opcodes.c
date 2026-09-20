@@ -2,6 +2,8 @@
 #include "sm83_opcodes.h"
 #include "sm83_alu.h"
 
+#define INS(fn, len, family) { (fn), (len), (family) }
+
 /* 8-bit load instruction prototypes */
 static unsigned op_ld_r8_r8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ld_r8_imm8(sm83_t* sm83, uint8_t opcode);
@@ -12,6 +14,7 @@ static unsigned op_ld_imm16mem_a(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ldh_cmem_a(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ldh_a_cmem(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ldh_a_imm8mem(sm83_t* sm83, uint8_t opcode);
+static unsigned op_ldh_imm8mem_a(sm83_t* sm83, uint8_t opcode);
 
 /* 16-bit load instruction prototypes */
 static unsigned op_ld_r16_imm16(sm83_t* sm83, uint8_t opcode);
@@ -65,7 +68,7 @@ static unsigned op_call_cc_imm16(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ret(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ret_cc(sm83_t* sm83, uint8_t opcode);
 static unsigned op_reti(sm83_t* sm83, uint8_t opcode);
-static unsigned op_rst_n8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_rst(sm83_t* sm83, uint8_t opcode);
 
 /* Miscellaneous instruction prototypes */
 static unsigned op_halt(sm83_t* sm83, uint8_t opcode);
@@ -74,7 +77,7 @@ static unsigned op_di(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ei(sm83_t* sm83, uint8_t opcode);
 static unsigned op_nop(sm83_t* sm83, uint8_t opcode);
 
-static unsigned op_noimpl(sm83_t* sm83, uint8_t opcode);
+// static unsigned op_noimpl(sm83_t* sm83, uint8_t opcode);
 
 /* Stack manipulation handler prototypes */
 static uint8_t stack_pop(sm83_t* sm83);
@@ -84,9 +87,175 @@ static void stack_push(sm83_t* sm83, uint8_t value);
 /* Opcode dispatch table */
 
 const sm83_instruction_t sm83_opcode_table[256] = {
+    [0x00] = INS(op_nop, 1, "NOP"),
+    [0x01] = INS(op_ld_r16_imm16, 3, "LD"),
+    [0x02] = INS(op_ld_r16mem_a, 1, "LD"),
+    [0x03] = INS(op_inc_r16, 1, "INC"),
+    [0x04] = INS(op_inc_r8, 1, "INC"),
+    [0x05] = INS(op_dec_r8, 1, "DEC"),
+    [0x06] = INS(op_ld_r8_imm8, 2, "LD"),
+    [0x07] = INS(op_rlca, 1, "RLCA"),
+    [0x08] = INS(op_ld_imm16mem_sp, 3, "LD"),
+    [0x09] = INS(op_add_hl_r16, 1, "ADD"),
+    [0x0A] = INS(op_ld_a_r16mem, 1, "LD"),
+    [0x0B] = INS(op_dec_r16, 1, "DEC"),
+    [0x0C] = INS(op_inc_r8, 1, "INC"),
+    [0x0D] = INS(op_dec_r8, 1, "DEC"),
+    [0x0E] = INS(op_ld_r8_imm8, 2, "LD"),
+    [0x0F] = INS(op_rrca, 1, "RRCA"),
 
+    [0x10] = INS(op_stop, 2, "STOP"),
+    [0x11] = INS(op_ld_r16_imm16, 3, "LD"),
+    [0x12] = INS(op_ld_r16mem_a, 1, "LD"),
+    [0x13] = INS(op_inc_r16, 1, "INC"),
+    [0x14] = INS(op_inc_r8, 1, "INC"),
+    [0x15] = INS(op_dec_r8, 1, "DEC"),
+    [0x16] = INS(op_ld_r8_imm8, 2, "LD"),
+    [0x17] = INS(op_rla, 1, "RLA"),
+    [0x18] = INS(op_jr_imm8, 2, "JR"),
+    [0x19] = INS(op_add_hl_r16, 1, "ADD"),
+    [0x1A] = INS(op_ld_a_r16mem, 1, "LD"),
+    [0x1B] = INS(op_dec_r16, 1, "DEC"),
+    [0x1C] = INS(op_inc_r8, 1, "INC"),
+    [0x1D] = INS(op_dec_r8, 1, "DEC"),
+    [0x1E] = INS(op_ld_r8_imm8, 2, "LD"),
+    [0x1F] = INS(op_rra, 1, "RRA"),
+
+    [0x20] = INS(op_jr_cc_imm8, 2, "JR"),
+    [0x21] = INS(op_ld_r16_imm16, 3, "LD"),
+    [0x22] = INS(op_ld_r16mem_a, 1, "LD"),
+    [0x23] = INS(op_inc_r16, 1, "INC"),
+    [0x24] = INS(op_inc_r8, 1, "INC"),
+    [0x25] = INS(op_dec_r8, 1, "DEC"),
+    [0x26] = INS(op_ld_r8_imm8, 2, "LD"),
+    [0x27] = INS(op_daa, 1, "DAA"),
+    [0x28] = INS(op_jr_cc_imm8, 2, "JR"),
+    [0x29] = INS(op_add_hl_r16, 1, "ADD"),
+    [0x2A] = INS(op_ld_a_r16mem, 1, "LD"),
+    [0x2B] = INS(op_dec_r16, 1, "DEC"),
+    [0x2C] = INS(op_inc_r8, 1, "INC"),
+    [0x2D] = INS(op_dec_r8, 1, "DEC"),
+    [0x2E] = INS(op_ld_r8_imm8, 2, "LD"),
+    [0x2F] = INS(op_cpl, 1, "CPL"),
+
+    [0x30] = INS(op_jr_cc_imm8, 2, "JR"),
+    [0x31] = INS(op_ld_r16_imm16, 3, "LD"),
+    [0x32] = INS(op_ld_r16mem_a, 1, "LD"),
+    [0x33] = INS(op_inc_r16, 1, "INC"),
+    [0x34] = INS(op_inc_r8, 1, "INC"),
+    [0x35] = INS(op_dec_r8, 1, "DEC"),
+    [0x36] = INS(op_ld_r8_imm8, 2, "LD"),
+    [0x37] = INS(op_scf, 1, "SCF"),
+    [0x38] = INS(op_jr_cc_imm8, 2, "JR"),
+    [0x39] = INS(op_add_hl_r16, 1, "ADD"),
+    [0x3A] = INS(op_ld_a_r16mem, 1, "LD"),
+    [0x3B] = INS(op_dec_r16, 1, "DEC"),
+    [0x3C] = INS(op_inc_r8, 1, "INC"),
+    [0x3D] = INS(op_dec_r8, 1, "DEC"),
+    [0x3E] = INS(op_ld_r8_imm8, 2, "LD"),
+    [0x3F] = INS(op_ccf, 1, "CCF"),
+
+    [0x40 ... 0x75] = INS(op_ld_r8_r8, 1, "LD"),
+    [0x76] = INS(op_halt, 1, "HALT"),
+    [0x77 ... 0x7F] = INS(op_ld_r8_r8, 1, "LD"),
+
+    [0x80 ... 0xBF] = INS(op_alu_r8, 1, "ALU"),
+
+    [0xC0] = INS(op_ret_cc, 1, "RET"),
+    [0xC1] = INS(op_pop_r16, 1, "POP"),
+    [0xC2] = INS(op_jp_cc_imm16, 3, "JP"),
+    [0xC3] = INS(op_jp_imm16, 3, "JP"),
+    [0xC4] = INS(op_call_cc_imm16, 3, "CALL"),
+    [0xC5] = INS(op_push_r16, 1, "PUSH"),
+    [0xC6] = INS(op_alu_imm8, 2, "ALU"),
+    [0xC7] = INS(op_rst, 1, "RST"),
+    [0xC8] = INS(op_ret_cc, 1, "RET"),
+    [0xC9] = INS(op_ret, 1, "RET"),
+    [0xCA] = INS(op_jp_cc_imm16, 3, "JP"),
+    [0xCB] = INS(NULL, 1, "PREFIX"),
+    [0xCC] = INS(op_call_cc_imm16, 3, "CALL"),
+    [0xCD] = INS(op_call_imm16, 3, "CALL"),
+    [0xCE] = INS(op_alu_imm8, 2, "ALU"),
+    [0xCF] = INS(op_rst, 1, "RST"),
+
+    [0xD0] = INS(op_ret_cc, 1, "RET"),
+    [0xD1] = INS(op_pop_r16, 1, "POP"),
+    [0xD2] = INS(op_jp_cc_imm16, 3, "JP"),
+    [0xD4] = INS(op_call_cc_imm16, 3, "CALL"),
+    [0xD5] = INS(op_push_r16, 1, "PUSH"),
+    [0xD6] = INS(op_alu_imm8, 2, "ALU"),
+    [0xD7] = INS(op_rst, 1, "RST"),
+    [0xD8] = INS(op_ret_cc, 1, "RET"),
+    [0xD9] = INS(op_reti, 1, "RETI"),
+    [0xDA] = INS(op_jp_cc_imm16, 3, "JP"),
+    [0xDC] = INS(op_call_cc_imm16, 3, "CALL"),
+    [0xDE] = INS(op_alu_imm8, 2, "ALU"),
+    [0xDF] = INS(op_rst, 1, "RST"),
+
+    [0xE0] = INS(op_ldh_imm8mem_a, 2, "LDH"),
+    [0xE1] = INS(op_pop_r16, 1, "POP"),
+    [0xE2] = INS(op_ldh_cmem_a, 1, "LDH"),
+    [0xE5] = INS(op_push_r16, 1, "PUSH"),
+    [0xE6] = INS(op_alu_imm8, 2, "ALU"),
+    [0xE7] = INS(op_rst, 1, "RST"),
+    [0xE8] = INS(op_add_sp_e8, 2, "ADD"),
+    [0xE9] = INS(op_jp_hl, 1, "JP"),
+    [0xEA] = INS(op_ld_imm16mem_a, 3, "LD"),
+    [0xEE] = INS(op_alu_imm8, 2, "ALU"),
+    [0xEF] = INS(op_rst, 1, "RST"),
+
+    [0xF0] = INS(op_ldh_a_imm8mem, 2, "LDH"),
+    [0xF1] = INS(op_pop_r16, 1, "POP"),
+    [0xF2] = INS(op_ldh_a_cmem, 1, "LDH"),
+    [0xF3] = INS(op_di, 1, "DI"),
+    [0xF5] = INS(op_push_r16, 1, "PUSH"),
+    [0xF6] = INS(op_alu_imm8, 2, "ALU"),
+    [0xF7] = INS(op_rst, 1, "RST"),
+    [0xF8] = INS(op_ld_hl_spe8, 2, "LD"),
+    [0xF9] = INS(op_ld_sp_hl, 1, "LD"),
+    [0xFA] = INS(op_ld_a_imm16mem, 3, "LD"),
+    [0xFB] = INS(op_ei, 1, "EI"),
+    [0xFE] = INS(op_alu_imm8, 2, "ALU"),
+    [0xFF] = INS(op_rst, 1, "RST")
 };
 
+const sm83_instruction_t sm83_opcode_table_cb[256] = {
+    [0x00 ... 0x07] = INS(op_rlc_r8, 1, "RLC"),
+    [0x08 ... 0x0F] = INS(op_rrc_r8, 1, "RRC"),
+    [0x10 ... 0x17] = INS(op_rl_r8, 1, "RL"),
+    [0x18 ... 0x1F] = INS(op_rr_r8, 1, "RR"),
+    [0x20 ... 0x27] = INS(op_sla_r8, 1, "SLA"),
+    [0x28 ... 0x2F] = INS(op_sra_r8, 1, "SRA"),
+    [0x30 ... 0x37] = INS(op_swap_r8, 1, "SWAP"),
+    [0x38 ... 0x3F] = INS(op_srl_r8, 1, "SRL"),
+
+    [0x40 ... 0x47] = INS(op_bit_b3_r8, 1, "BIT"),
+    [0x48 ... 0x4F] = INS(op_bit_b3_r8, 1, "BIT"),
+    [0x50 ... 0x57] = INS(op_bit_b3_r8, 1, "BIT"),
+    [0x58 ... 0x5F] = INS(op_bit_b3_r8, 1, "BIT"),
+    [0x60 ... 0x67] = INS(op_bit_b3_r8, 1, "BIT"),
+    [0x68 ... 0x6F] = INS(op_bit_b3_r8, 1, "BIT"),
+    [0x70 ... 0x77] = INS(op_bit_b3_r8, 1, "BIT"),
+    [0x78 ... 0x7F] = INS(op_bit_b3_r8, 1, "BIT"),
+
+    [0x80 ... 0x87] = INS(op_res_b3_r8, 1, "RES"),
+    [0x88 ... 0x8F] = INS(op_res_b3_r8, 1, "RES"),
+    [0x90 ... 0x97] = INS(op_res_b3_r8, 1, "RES"),
+    [0x98 ... 0x9F] = INS(op_res_b3_r8, 1, "RES"),
+    [0xA0 ... 0xA7] = INS(op_res_b3_r8, 1, "RES"),
+    [0xA8 ... 0xAF] = INS(op_res_b3_r8, 1, "RES"),
+    [0xB0 ... 0xB7] = INS(op_res_b3_r8, 1, "RES"),
+    [0xB8 ... 0xBF] = INS(op_res_b3_r8, 1, "RES"),
+
+    [0xC0 ... 0xC7] = INS(op_set_b3_r8, 1, "SET"),
+    [0xC8 ... 0xCF] = INS(op_set_b3_r8, 1, "SET"),
+    [0xD0 ... 0xD7] = INS(op_set_b3_r8, 1, "SET"),
+    [0xD8 ... 0xDF] = INS(op_set_b3_r8, 1, "SET"),
+    [0xE0 ... 0xE7] = INS(op_set_b3_r8, 1, "SET"),
+    [0xE8 ... 0xEF] = INS(op_set_b3_r8, 1, "SET"),
+    [0xF0 ... 0xF7] = INS(op_set_b3_r8, 1, "SET"),
+    [0xF8 ... 0xFF] = INS(op_set_b3_r8, 1, "SET")
+};
 
 /* 8-bit load instruction definitions */
 
@@ -107,8 +276,8 @@ static unsigned op_ld_r8_r8(sm83_t* sm83, uint8_t opcode) {
 
 static unsigned op_ld_r8_imm8(sm83_t* sm83, uint8_t opcode) {
     uint8_t dst = OPCODE_Y(opcode);
+    uint8_t value = sm83_fetch8(sm83);
 
-    uint8_t value = sm83_fetch8(sm83); 
     sm83_write_r8(sm83, dst, value);
 
     return 2;
@@ -647,7 +816,7 @@ static unsigned op_bit_b3_r8(sm83_t* sm83, uint8_t opcode) {
     uint8_t bit = OPCODE_Y(opcode);
     bool is_set = (value & (1u << bit)) != 0;
 
-    uint8_t flags;
+    uint8_t flags = 0;
 
     if (!is_set) flags |= SM83_FLAG_Z;
     flags |= SM83_FLAG_H;
