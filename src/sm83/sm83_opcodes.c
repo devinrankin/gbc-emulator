@@ -605,8 +605,8 @@ static unsigned op_ret_cc(sm83_t* sm83, uint8_t opcode) {
 }
 
 static unsigned op_reti(sm83_t* sm83, uint8_t opcode) {
-    op_ei(sm83, opcode);
-    op_ret(sm83, opcode);
+    (void)op_ei(sm83, opcode);
+    (void)op_ret(sm83, opcode);
 
     return 4;
 }
