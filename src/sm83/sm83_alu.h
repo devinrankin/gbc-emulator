@@ -19,6 +19,6 @@ typedef enum {
 uint8_t alu_execute(sm83_t* sm83, sm83_alu_op_t operation, uint8_t lhs, uint8_t rhs);
 
 uint16_t alu_add16(sm83_t* sm83, uint16_t lhs, uint16_t rhs);
-uint16_t alu_add_sp_i8(sm83_t* sm83, uint16_t sp, int8_t offset);
+uint16_t alu_add_sp_e8(sm83_t* sm83, uint16_t sp, int8_t offset);
 
 #endif

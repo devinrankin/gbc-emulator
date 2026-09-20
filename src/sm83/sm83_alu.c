@@ -42,7 +42,7 @@ uint16_t alu_add16(sm83_t* sm83, uint16_t lhs, uint16_t rhs) {
     return result;
 }
 
-uint16_t alu_add_sp_i8(sm83_t* sm83, uint16_t sp, int8_t offset) {
+uint16_t alu_add_sp_e8(sm83_t* sm83, uint16_t sp, int8_t offset) {
     uint8_t immediate = (uint8_t)offset;
 
     uint16_t result = (uint16_t)((int32_t)sp + offset);
