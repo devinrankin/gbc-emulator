@@ -7,10 +7,19 @@ static unsigned op_ld_r8_r8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ld_r8_imm8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ld_a_r16mem(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ld_r16mem_a(sm83_t* sm83, uint8_t opcode);
+static unsigned op_ld_a_imm16mem(sm83_t* sm83, uint8_t opcode);
+static unsigned op_ld_imm16mem_a(sm83_t* sm83, uint8_t opcode);
+static unsigned op_ldh_cmem_a(sm83_t* sm83, uint8_t opcode);
+static unsigned op_ldh_a_cmem(sm83_t* sm83, uint8_t opcode);
+static unsigned op_ldh_a_imm8mem(sm83_t* sm83, uint8_t opcode);
 
 /* 16-bit load instruction prototypes */
 static unsigned op_ld_r16_imm16(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ld_imm16mem_sp(sm83_t* sm83, uint8_t opcode);
+static unsigned op_ld_sp_hl(sm83_t* sm83, uint8_t opcode);
+static unsigned op_push_r16(sm83_t* sm83, uint8_t opcode);
+static unsigned op_pop_r16(sm83_t* sm83, uint8_t opcode);
+static unsigned op_ld_hl_spe8(sm83_t* sm83, uint8_t opcode);
 
 /* 8-bit arithmetic and logical instruction prototypes */
 static unsigned op_alu_r8(sm83_t* sm83, uint8_t opcode);
@@ -26,6 +35,7 @@ static unsigned op_cpl(sm83_t* sm83, uint8_t opcode);
 static unsigned op_inc_r16(sm83_t* sm83, uint8_t opcode);
 static unsigned op_dec_r16(sm83_t* sm83, uint8_t opcode);
 static unsigned op_add_hl_r16(sm83_t* sm83, uint8_t opcode);
+static unsigned op_add_sp_e8(sm83_t* sm83, uint8_t opcode);
 
 /* Rotate, shift, and bit operation instruction prototypes */
 static unsigned op_rlca(sm83_t* sm83, uint8_t opcode);
@@ -38,8 +48,16 @@ static unsigned op_rlc_r8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_rrc_r8(sm83_t* sm83, uint8_t opcode);
 
 /* Control flow instruction prototypes */
+static unsigned op_jp_imm8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_jp_cc_imm8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_jr_imm8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_jr_cc_imm8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_call_imm16(sm83_t* sm83, uint8_t opcode);
+static unsigned op_call_cc_imm16(sm83_t* sm83, uint8_t opcode);
+static unsigned op_ret(sm83_t* sm83, uint8_t opcode);
+static unsigned op_ret_cc(sm83_t* sm83, uint8_t opcode);
+static unsigned op_reti(sm83_t* sm83, uint8_t opcode);
+static unsigned op_rst_n8(sm83_t* sm83, uint8_t opcode);
 
 /* Miscellaneous instruction prototypes */
 static unsigned op_halt(sm83_t* sm83, uint8_t opcode);
@@ -49,6 +67,10 @@ static unsigned op_ei(sm83_t* sm83, uint8_t opcode);
 static unsigned op_nop(sm83_t* sm83, uint8_t opcode);
 
 static unsigned op_noimpl(sm83_t* sm83, uint8_t opcode);
+
+/* Stack manipulation handler prototypes */
+static uint8_t stack_pop(sm83_t* sm83);
+static void stack_push(sm83_t* sm83, uint8_t value);
 
 
 /* Opcode dispatch table */
@@ -77,11 +99,90 @@ static unsigned op_ld_r8_r8(sm83_t* sm83, uint8_t opcode) {
 static unsigned op_ld_r8_imm8(sm83_t* sm83, uint8_t opcode) {
     uint8_t dst = OPCODE_Y(opcode);
 
-    uint8_t value = bus_read8(sm83->bus, sm83->registers.pc + 1);
-
+    uint8_t value = sm83_fetch8(sm83); 
     sm83_write_r8(sm83, dst, value);
 
     return 2;
+}
+
+static unsigned op_ld_r16mem_a(sm83_t* sm83, uint8_t opcode) {
+    uint8_t pair = OPCODE_P(opcode);
+
+    uint16_t address = sm83_read_r16mem(sm83, pair);
+    bus_write8(sm83->bus, address, sm83->registers.a);
+
+    if (pair == SM83_R16MEM_HLI) {
+        sm83_write_r16(sm83, SM83_R16_HL, address + 1);
+    } else if(pair == SM83_R16MEM_HLD) {
+        sm83_write_r16(sm83, SM83_R16_HL, address - 1);
+    }
+
+    return 2;
+}
+
+static unsigned op_ld_a_r16mem(sm83_t* sm83, uint8_t opcode) {
+    uint8_t pair = OPCODE_P(opcode);
+
+    uint16_t address = sm83_read_r16mem(sm83, pair);
+    sm83->registers.a = bus_read8(sm83->bus, address);
+
+    if (pair == SM83_R16MEM_HLI) {
+        sm83_write_r16(sm83, SM83_R16_HL, address + 1);
+    } else if(pair == SM83_R16MEM_HLD) {
+        sm83_write_r16(sm83, SM83_R16_HL, address - 1);
+    }
+
+    return 2;
+}
+
+static unsigned op_ld_a_imm16mem(sm83_t* sm83, uint8_t opcode) {
+    (void)opcode;
+
+    uint16_t address = sm83_fetch16(sm83);
+    sm83->registers.a = bus_read8(sm83->bus, address);
+
+    return 4;
+}
+
+static unsigned op_ld_imm16mem_a(sm83_t* sm83, uint8_t opcode) {
+    (void)opcode;
+
+    uint16_t address = sm83_fetch16(sm83);
+    bus_write8(sm83->bus, address, sm83->registers.a);
+
+    return 4;
+}
+
+static unsigned op_ldh_a_cmem(sm83_t* sm83, uint8_t opcode) {
+    uint16_t address = 0xFF00 & sm83_read_r8(sm83, SM83_R8_C);
+    uint8_t value = bus_read8(sm83->bus, address);
+
+    sm83->registers.a = value;
+
+    return 2;
+}
+
+static unsigned op_ldh_cmem_a(sm83_t* sm83, uint8_t opcode) {
+    uint16_t address = 0xFF00 & sm83_read_r8(sm83, SM83_R8_C);
+    bus_write8(sm83->bus, address, sm83->registers.a);
+
+    return 2;
+}
+
+static unsigned op_ldh_a_imm8mem(sm83_t* sm83, uint8_t opcode) {
+    uint16_t address = 0xFF00 & sm83_fetch8(sm83);
+    uint8_t value = bus_read8(sm83->bus, address);
+
+    sm83->registers.a = value;
+
+    return 3;
+}
+
+static unsigned op_ldh_imm8mem_a(sm83_t* sm83, uint8_t opcode) {
+    uint16_t address = 0xFF00 & sm83_fetch8(sm83);
+    bus_write8(sm83->bus, address, sm83->registers.a);
+
+    return 3;
 }
 
 
@@ -90,70 +191,64 @@ static unsigned op_ld_r8_imm8(sm83_t* sm83, uint8_t opcode) {
 static unsigned op_ld_r16_imm16(sm83_t* sm83, uint8_t opcode) {
     uint8_t pair = OPCODE_P(opcode);
 
-    uint8_t value = bus_read16(sm83->bus, sm83->registers.pc);
+    uint16_t value = sm83_fetch16(sm83);
     sm83_write_r16(sm83, pair, value);
 
     return 3;
 }
 
-static unsigned op_ld_r16mem_a(sm83_t* sm83, uint8_t opcode) {
-    uint8_t pair = OPCODE_P(opcode);
-
-    uint8_t address = 0;
-    switch (pair) {
-        case 0: address = (uint16_t)(sm83->registers.b << 8) | (uint16_t)sm83->registers.c; break;
-        case 1: address = (uint16_t)(sm83->registers.d << 8) | (uint16_t)sm83->registers.e; break;
-        case 2: 
-            address = (uint16_t)(sm83->registers.h << 8) | (uint16_t)sm83->registers.l;
-            sm83_write_r16(sm83, 2, address + 1);
-            break;
-        case 3:
-            address = (uint16_t)(sm83->registers.h << 8) | (uint16_t)sm83->registers.l;
-            sm83_write_r16(sm83, 2, address - 1);
-            break;               
-    }
-    bus_write8(sm83->bus, address, sm83->registers.a);
-
-    return 2;
-}
-
 static unsigned op_ld_imm16mem_sp(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
-    uint16_t pc = sm83->registers.pc;
-
-    uint8_t low = bus_read8(sm83->bus, pc + 1);
-    uint8_t high = bus_read8(sm83->bus, pc + 2);
-
-    uint16_t address = (uint16_t)low | ((uint16_t)high << 8);
-
+    uint16_t address = sm83_fetch16(sm83); 
     uint16_t sp = sm83->registers.sp;
 
     bus_write8(sm83->bus, address, (uint8_t)(sp & 0xFF));
-    bus_write8(sm83->bus, address + 1, (uint8_t)(sp >> 8));
+    address++;
+    bus_write8(sm83->bus, address, (uint8_t)(sp >> 8));
 
     return 5;
 }
 
-static unsigned op_ld_a_r16mem(sm83_t* sm83, uint8_t opcode) {
-    uint8_t pair = OPCODE_P(opcode);
-
-    uint8_t address = 0;
-    switch (pair) {
-        case 0: address = (uint16_t)(sm83->registers.b << 8) | (uint16_t)sm83->registers.c; break;
-        case 1: address = (uint16_t)(sm83->registers.d << 8) | (uint16_t)sm83->registers.e; break;
-        case 2: 
-            address = (uint16_t)(sm83->registers.h << 8) | (uint16_t)sm83->registers.l;
-            sm83_write_r16(sm83, SM83_R16_HL, address + 1);
-            break;
-        case 3:
-            address = (uint16_t)(sm83->registers.h << 8) | (uint16_t)sm83->registers.l;
-            sm83_write_r16(sm83, SM83_R16_HL, address - 1);
-            break; 
-    }
-    sm83->registers.a = bus_read8(sm83->bus, address);
+static unsigned op_ld_sp_hl(sm83_t* sm83, uint8_t opcode) {
+    uint16_t value = sm83_read_r16(sm83, SM83_R16_HL);
+    sm83_write_r16(sm83, SM83_R16_SP, value);
 
     return 2;
+}
+
+static unsigned op_pop_r16(sm83_t* sm83, uint8_t opcode) {
+    uint8_t pair = OPCODE_P(opcode);
+
+    uint8_t low = stack_pop(sm83);
+    uint8_t high = stack_pop(sm83);
+    
+    uint16_t value = ((uint16_t)high << 8) | low;
+    sm83_write_r16stk(sm83, pair, value);
+
+    return 3;
+}
+
+static unsigned op_push_r16(sm83_t* sm83, uint8_t opcode) {
+    uint8_t pair = OPCODE_P(opcode);
+    uint16_t value = sm83_read_r16stk(sm83, pair);
+
+    uint8_t high = (uint8_t)(value >> 8);
+    uint8_t low = (uint8_t)(value & 0xFF); 
+
+    stack_push(sm83, high);
+    stack_push(sm83, low);
+
+    return 4;
+}
+
+static unsigned op_ld_hl_spe8(sm83_t* sm83, uint8_t opcode) {
+    int8_t offset = (int8_t)sm83_fetch8(sm83);
+    uint16_t value = alu_add_sp_e8(sm83, sm83->registers.sp, offset);
+
+    sm83_write_r16(sm83, SM83_R16_HL, value);
+
+    return 3;
 }
 
 
@@ -174,7 +269,7 @@ static unsigned op_alu_r8(sm83_t* sm83, uint8_t opcode) {
 
 static unsigned op_alu_imm8(sm83_t* sm83, uint8_t opcode) {
     uint8_t lhs = sm83->registers.a;
-    uint8_t rhs = bus_read8(sm83->bus, sm83->registers.pc + 1);
+    uint8_t rhs = sm83_fetch8(sm83);
     sm83_alu_op_t operation = OPCODE_Y(opcode);
 
     uint8_t result = alu_execute(sm83, operation, lhs, rhs);
@@ -315,11 +410,11 @@ static unsigned op_add_hl_r16(sm83_t* sm83, uint8_t opcode) {
     return 2;
 }
 
-static unsigned op_add_sp_imm8(sm83_t* sm83, uint8_t opcode) {
-    int8_t offset = bus_read8(sm83->bus, sm83->registers.pc + 1);
+static unsigned op_add_sp_e8(sm83_t* sm83, uint8_t opcode) {
+    int8_t offset = sm83_fetch8(sm83);
     uint16_t sp = sm83->registers.sp;
 
-    uint16_t result = alu_add_sp_i8(sm83, sp, offset);
+    uint16_t result = alu_add_sp_e8(sm83, sp, offset);
     sm83->registers.sp = result;
 
     return 4;
@@ -392,34 +487,144 @@ static unsigned op_rra(sm83_t* sm83, uint8_t opcode) {
 
 /* Control flow instruction definitions */
 
+static unsigned op_jp_imm8(sm83_t* sm83, uint8_t opcode) {
+    (void)opcode;
+
+    uint8_t immediate = sm83_fetch8(sm83);
+    sm83->registers.pc = immediate;
+
+    return 4;
+}
+
+static unsigned op_jp_cc_imm8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t cond = OPCODE_COND(opcode);
+
+    bool is_cond;
+    switch (cond) {
+        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N); break;
+        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N); break;
+        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C); break;
+    }
+
+    if (is_cond) {
+        return op_jp_imm8(sm83, opcode);
+    }
+
+    return 3;
+}
+
 static unsigned op_jr_imm8(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
     uint16_t old_pc = sm83->registers.pc;
-    uint8_t offset = bus_read8(sm83->bus, old_pc + 1);
+    uint8_t offset = sm83_fetch8(sm83); 
 
     sm83->registers.pc = old_pc + offset;
 
     return 3;
 }
-static unsigned op_jr_cc_imm8(sm83_t* sm83, uint8_t opcode) {
-    uint8_t cond_type = ((opcode >> 3) & 0x03) << 8;
 
-    bool cond;
-    switch (cond_type) {
-        case 0: cond = sm83_get_flag(sm83, SM83_FLAG_N); break;
-        case 1: cond = sm83_get_flag(sm83, SM83_FLAG_Z); break;
-        case 2: cond = !sm83_get_flag(sm83, SM83_FLAG_N); break;
-        case 3: cond = sm83_get_flag(sm83, SM83_FLAG_C); break;
+static unsigned op_jr_cc_imm8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t cond = OPCODE_COND(opcode);
+
+    bool is_cond;
+    switch (cond) {
+        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N); break;
+        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N); break;
+        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C); break;
     }
 
-    if (cond) {
-        return op_jr_imm8(sm83, opcode);
+    if (is_cond) {
+        return op_jp_imm8(sm83, opcode);
     }
 
     return 2;
 }
 
+static unsigned op_call_imm16(sm83_t* sm83, uint8_t opcode) {
+    uint16_t address = sm83_fetch16(sm83);
+
+    uint8_t high = (uint8_t)(address >> 8);
+    uint8_t low = (uint8_t)(address & 0xFF); 
+
+    stack_push(sm83, high);
+    stack_push(sm83, low);
+
+    sm83->registers.pc = address;
+
+    return 6;  
+}
+
+static unsigned op_call_cc_imm16(sm83_t* sm83, uint8_t opcode) {
+    uint8_t cond = OPCODE_COND(opcode);
+
+    bool is_cond;
+    switch (cond) {
+        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N); break;
+        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N); break;
+        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C); break;
+    }
+
+    if (is_cond) {
+        return op_call_imm16(sm83, opcode);
+    }
+
+    return 3;
+}
+
+static unsigned op_ret(sm83_t* sm83, uint8_t opcode) {
+    (void)opcode;
+
+    uint8_t low = stack_pop(sm83);
+    uint8_t high = stack_pop(sm83);
+
+    sm83->registers.pc = ((uint16_t)high << 8) | low;
+
+    return 4;
+}
+
+static unsigned op_ret_cc(sm83_t* sm83, uint8_t opcode) {
+    uint8_t cond = OPCODE_COND(opcode);
+
+    bool is_cond;
+    switch (cond) {
+        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N); break;
+        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N); break;
+        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C); break;
+    }
+
+    if (is_cond) {
+        return op_ret(sm83, opcode) + 1;
+    }
+
+    return 2;
+}
+
+static unsigned op_reti(sm83_t* sm83, uint8_t opcode) {
+    op_ei(sm83, opcode);
+    op_ret(sm83, opcode);
+
+    return 4;
+}
+
+static unsigned op_rst(sm83_t* sm83, uint8_t opcode) {
+    uint16_t vector = (uint16_t)OPCODE_Y(opcode) << 3;
+    uint16_t pc = sm83->registers.pc;
+
+    uint8_t high = (uint8_t)(pc >> 8);
+    uint8_t low = (uint8_t)(pc & 0xFF); 
+
+    stack_push(sm83, high);
+    stack_push(sm83, low);
+
+    sm83->registers.pc = vector;
+
+    return 4;
+}
 
 /* Miscellaneous instruction definitions */
 
@@ -431,6 +636,8 @@ static unsigned op_nop(sm83_t* sm83, uint8_t opcode) {
 }
 
 static unsigned op_di(sm83_t* sm83, uint8_t opcode) {
+    (void)opcode;
+
     sm83->ime = false;
 
     return 1;
@@ -438,6 +645,8 @@ static unsigned op_di(sm83_t* sm83, uint8_t opcode) {
 
 /* Enables interrupts. The IME flag should only be set after the next instruction. */
 static unsigned op_ei(sm83_t* sm83, uint8_t opcode) {
+    (void)opcode;
+
     sm83->ime = true;
 
     return 1;
@@ -452,6 +661,23 @@ static unsigned op_halt(sm83_t* sm83, uint8_t opcode) {
 }
 
 static unsigned op_stop(sm83_t* sm83, uint8_t opcode) {
+    (void)sm83;
+    (void)opcode;
+
     /* TODO */
     return 1;
+}
+
+
+/* Stack manipulation function definitions */
+static void stack_push(sm83_t* sm83, uint8_t value) {
+    sm83->registers.sp--;
+    bus_write8(sm83->bus, sm83->registers.sp, value);
+}
+
+static uint8_t stack_pop(sm83_t* sm83) {
+    uint8_t value = bus_read8(sm83->bus, sm83->registers.sp);
+    sm83->registers.sp++;
+
+    return value;
 }
