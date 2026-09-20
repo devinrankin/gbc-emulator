@@ -37,7 +37,8 @@ typedef enum {
     SM83_STATE_INIT,
     SM83_STATE_RESET,
     SM83_STATE_RUNNING,
-    SM83_STATE_HALTED
+    SM83_STATE_HALTED,
+    SM83_STATE_STOPPED
 } sm83_state_t;
 
 typedef struct sm83 {
@@ -49,6 +50,7 @@ typedef struct sm83 {
     uint64_t total_cycles;
 
     bool halted;
+    bool stopped;
     bool ime;
 } sm83_t;
 

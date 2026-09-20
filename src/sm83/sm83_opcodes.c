@@ -42,13 +42,21 @@ static unsigned op_rlca(sm83_t* sm83, uint8_t opcode);
 static unsigned op_rrca(sm83_t* sm83, uint8_t opcode);
 static unsigned op_rla(sm83_t* sm83, uint8_t opcode);
 static unsigned op_rra(sm83_t* sm83, uint8_t opcode);
-static unsigned op_rl_r8(sm83_t* sm83, uint8_t opcode);
-static unsigned op_rr_r8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_rlc_r8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_rrc_r8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_rl_r8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_rr_r8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_sla_r8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_sra_r8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_swap_r8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_srl_r8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_bit_b3_r8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_res_b3_r8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_set_b3_r8(sm83_t* sm83, uint8_t opcode);
 
 /* Control flow instruction prototypes */
 static unsigned op_jp_imm8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_jp_hl(sm83_t* sm83, uint8_t opcode);
 static unsigned op_jp_cc_imm8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_jr_imm8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_jr_cc_imm8(sm83_t* sm83, uint8_t opcode);
@@ -295,7 +303,7 @@ static unsigned op_inc_r8(sm83_t* sm83, uint8_t opcode) {
     sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H, flags);
     sm83_write_r8(sm83, operand, result);
 
-    return 1;
+    return operand == SM83_R8_HLMEM ? 3 : 1;
 }
 
 static unsigned op_dec_r8(sm83_t* sm83, uint8_t opcode) {
@@ -314,7 +322,7 @@ static unsigned op_dec_r8(sm83_t* sm83, uint8_t opcode) {
     sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H, flags);
     sm83_write_r8(sm83, operand, result);
 
-    return 1;
+    return operand == SM83_R8_HLMEM ? 3 : 1;
 }
 
 static unsigned op_ccf(sm83_t* sm83, uint8_t opcode) {
@@ -484,6 +492,194 @@ static unsigned op_rra(sm83_t* sm83, uint8_t opcode) {
     return 1;
 }
 
+static unsigned op_rlc_r8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t index = OPCODE_Z(opcode);
+    uint8_t value = sm83_read_r8(sm83, index);
+
+    bool carry = (value & 0x80) != 0;
+
+    uint8_t result = (uint8_t)((value << 1) | (carry ? 1 : 0));
+
+    uint8_t flags = 0; 
+
+    if (result == 0) flags |= SM83_FLAG_Z;
+    if (carry) flags |= SM83_FLAG_C;
+    
+    sm83_write_r8(sm83, index, result);
+    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+
+    return index == SM83_R8_HLMEM ? 4 : 2;
+}
+
+static unsigned op_rrc_r8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t index = OPCODE_Z(opcode);
+    uint8_t value = sm83_read_r8(sm83, index);
+
+    bool carry = (value & 0x01) != 0;
+
+    uint8_t result = (uint8_t)((value >> 1) | (carry ? 0x80 : 0x00));
+
+    uint8_t flags = 0; 
+
+    if (result == 0) flags |= SM83_FLAG_Z;
+    if (carry) flags |= SM83_FLAG_C;
+    
+    sm83_write_r8(sm83, index, result);
+    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+
+    return index == SM83_R8_HLMEM ? 4 : 2;
+}
+
+static unsigned op_rl_r8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t index = OPCODE_Z(opcode);
+    uint8_t value = sm83_read_r8(sm83, index);
+
+    bool old_carry = sm83_get_flag(sm83, SM83_FLAG_C);
+    bool carry = (value & 0x80) != 0;
+
+    uint8_t result = (uint8_t)((value << 1) | (old_carry ? 1 : 0));
+   
+    uint8_t flags = 0; 
+
+    if (result == 0) flags |= SM83_FLAG_Z;
+    if (carry) flags |= SM83_FLAG_C;
+    
+    sm83_write_r8(sm83, index, result);
+    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+
+    return index == SM83_R8_HLMEM ? 4 : 2;
+}
+
+static unsigned op_rr_r8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t index = OPCODE_Z(opcode);
+    uint8_t value = sm83_read_r8(sm83, index);
+
+    bool old_carry = sm83_get_flag(sm83, SM83_FLAG_C);
+    bool carry = (value & 0x01) != 0;
+
+    uint8_t result = (uint8_t)((value >> 1) | (old_carry ? 0x80 : 0x00));
+
+    uint8_t flags = 0; 
+
+    if (result == 0) flags |= SM83_FLAG_Z;
+    if (carry) flags |= SM83_FLAG_C;
+    
+    sm83_write_r8(sm83, index, result);
+    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+
+    return index == SM83_R8_HLMEM ? 4 : 2;
+}
+
+static unsigned op_sla_r8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t index = OPCODE_Z(opcode);
+    uint8_t value = sm83_read_r8(sm83, index);
+
+    bool carry = (value & 0x80) != 0;
+
+    uint8_t result = value << 1;
+
+    uint8_t flags = 0; 
+
+    if (result == 0) flags |= SM83_FLAG_Z;
+    if (carry) flags |= SM83_FLAG_C;
+    
+    sm83_write_r8(sm83, index, result);
+    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    
+    return index == SM83_R8_HLMEM ? 4 : 2;
+}
+
+static unsigned op_sra_r8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t index = OPCODE_Z(opcode);
+    uint8_t value = sm83_read_r8(sm83, index);
+
+    bool carry = (value & 0x01) != 0;
+
+    uint8_t result = (value & 0x80) | (value >> 1);
+
+    uint8_t flags = 0; 
+
+    if (result == 0) flags |= SM83_FLAG_Z;
+    if (carry) flags |= SM83_FLAG_C;
+    
+    sm83_write_r8(sm83, index, result);
+    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+
+    return index == SM83_R8_HLMEM ? 4 : 2;
+}
+
+static unsigned op_swap_r8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t index = OPCODE_Z(opcode);
+    uint8_t value = sm83_read_r8(sm83, index);
+
+    uint8_t result = (value << 4) | (value >> 4);
+    
+    sm83_write_r8(sm83, index, result);
+    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, result == 0 ? SM83_FLAG_Z : 0);
+
+    return index == SM83_R8_HLMEM ? 4 : 2;
+}
+
+static unsigned op_srl_r8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t index = OPCODE_Z(opcode);
+    uint8_t value = sm83_read_r8(sm83, index);
+
+    bool carry = (value & 0x01) != 0;
+
+    uint8_t result = value >> 1;
+
+    uint8_t flags = 0; 
+
+    if (result == 0) flags |= SM83_FLAG_Z;
+    if (carry) flags |= SM83_FLAG_C;
+    
+    sm83_write_r8(sm83, index, result);
+    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+
+    return index == SM83_R8_HLMEM ? 4 : 2;
+}
+
+static unsigned op_bit_b3_r8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t index = OPCODE_Z(opcode);
+    uint8_t value = sm83_read_r8(sm83, index);
+
+    uint8_t bit = OPCODE_Y(opcode);
+    bool is_set = (value & (1u << bit)) != 0;
+
+    uint8_t flags;
+
+    if (!is_set) flags |= SM83_FLAG_Z;
+    flags |= SM83_FLAG_H;
+
+    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H, flags);
+
+    return index == SM83_R8_HLMEM ? 4 : 2;
+}
+
+static unsigned op_res_b3_r8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t index = OPCODE_Z(opcode);
+    uint8_t value = sm83_read_r8(sm83, index);
+
+    uint8_t bit = OPCODE_Y(opcode);
+    
+    value &= ~(1u << bit);
+    sm83_write_r8(sm83, index, value);
+
+    return index == SM83_R8_HLMEM ? 4 : 2;
+}
+
+static unsigned op_set_b3_r8(sm83_t* sm83, uint8_t opcode) {
+    uint8_t index = OPCODE_Z(opcode);
+    uint8_t value = sm83_read_r8(sm83, index);
+
+    uint8_t bit = OPCODE_Y(opcode);
+    
+    value |= (1u << bit);
+    sm83_write_r8(sm83, index, value);
+
+    return index == SM83_R8_HLMEM ? 4 : 2;
+}
+
 
 /* Control flow instruction definitions */
 
@@ -494,6 +690,14 @@ static unsigned op_jp_imm8(sm83_t* sm83, uint8_t opcode) {
     sm83->registers.pc = immediate;
 
     return 4;
+}
+
+static unsigned op_jp_hl(sm83_t* sm83, uint8_t opcode) {
+    uint16_t address = sm83_read_r16(sm83, SM83_R16_HL);
+
+    sm83->registers.pc = address;
+
+    return 1;
 }
 
 static unsigned op_jp_cc_imm8(sm83_t* sm83, uint8_t opcode) {
@@ -517,10 +721,9 @@ static unsigned op_jp_cc_imm8(sm83_t* sm83, uint8_t opcode) {
 static unsigned op_jr_imm8(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
-    uint16_t old_pc = sm83->registers.pc;
-    uint8_t offset = sm83_fetch8(sm83); 
+    int8_t offset = sm83_fetch8(sm83); 
 
-    sm83->registers.pc = old_pc + offset;
+    sm83->registers.pc += offset;
 
     return 3;
 }
@@ -661,10 +864,11 @@ static unsigned op_halt(sm83_t* sm83, uint8_t opcode) {
 }
 
 static unsigned op_stop(sm83_t* sm83, uint8_t opcode) {
-    (void)sm83;
     (void)opcode;
+    (void)sm83_fetch8(sm83);
 
-    /* TODO */
+    sm83->stopped = true; 
+
     return 1;
 }
 
