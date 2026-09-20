@@ -55,9 +55,9 @@ static unsigned op_res_b3_r8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_set_b3_r8(sm83_t* sm83, uint8_t opcode);
 
 /* Control flow instruction prototypes */
-static unsigned op_jp_imm8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_jp_imm16(sm83_t* sm83, uint8_t opcode);
 static unsigned op_jp_hl(sm83_t* sm83, uint8_t opcode);
-static unsigned op_jp_cc_imm8(sm83_t* sm83, uint8_t opcode);
+static unsigned op_jp_cc_imm16(sm83_t* sm83, uint8_t opcode);
 static unsigned op_jr_imm8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_jr_cc_imm8(sm83_t* sm83, uint8_t opcode);
 static unsigned op_call_imm16(sm83_t* sm83, uint8_t opcode);
@@ -84,6 +84,7 @@ static void stack_push(sm83_t* sm83, uint8_t value);
 /* Opcode dispatch table */
 
 const sm83_instruction_t sm83_opcode_table[256] = {
+
 };
 
 
@@ -683,10 +684,10 @@ static unsigned op_set_b3_r8(sm83_t* sm83, uint8_t opcode) {
 
 /* Control flow instruction definitions */
 
-static unsigned op_jp_imm8(sm83_t* sm83, uint8_t opcode) {
+static unsigned op_jp_imm16(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
-    uint8_t immediate = sm83_fetch8(sm83);
+    uint16_t immediate = sm83_fetch16(sm83);
     sm83->registers.pc = immediate;
 
     return 4;
@@ -700,7 +701,7 @@ static unsigned op_jp_hl(sm83_t* sm83, uint8_t opcode) {
     return 1;
 }
 
-static unsigned op_jp_cc_imm8(sm83_t* sm83, uint8_t opcode) {
+static unsigned op_jp_cc_imm16(sm83_t* sm83, uint8_t opcode) {
     uint8_t cond = OPCODE_COND(opcode);
 
     bool is_cond;
@@ -712,7 +713,7 @@ static unsigned op_jp_cc_imm8(sm83_t* sm83, uint8_t opcode) {
     }
 
     if (is_cond) {
-        return op_jp_imm8(sm83, opcode);
+        return op_jp_imm16(sm83, opcode);
     }
 
     return 3;
@@ -740,7 +741,7 @@ static unsigned op_jr_cc_imm8(sm83_t* sm83, uint8_t opcode) {
     }
 
     if (is_cond) {
-        return op_jp_imm8(sm83, opcode);
+        return op_jr_imm8(sm83, opcode);
     }
 
     return 2;
