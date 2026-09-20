@@ -12,6 +12,7 @@ SOURCES := \
 	$(SRC_DIR)/mem/cartridge.c \
 	$(SRC_DIR)/mem/mbc.c \
 	$(SRC_DIR)/sm83/sm83.c \
+	$(SRC_DIR)/sm83/sm83_alu.c \
 	$(SRC_DIR)/sm83/sm83_opcodes.c
 
 OBJECTS := $(SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
