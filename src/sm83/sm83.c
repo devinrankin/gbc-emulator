@@ -1,9 +1,6 @@
 #include "sm83.h"
 #include "sm83_opcodes.h"
 
-/* Fetches the next byte in ROM and increments the program counter. */
-static uint8_t sm83_fetch8(sm83_t* sm83);
-
 void sm83_init(sm83_t* sm83, bus_t* bus) {
     *sm83 = (sm83_t) {
         .state = SM83_STATE_INIT,
@@ -40,12 +37,13 @@ void sm83_dump(sm83_t* sm83) {
 uint32_t sm83_step(sm83_t* sm83) {
 /* TODO: Implement full step logic after opcode table completed */
     uint32_t cycles;
-    
+
     if (sm83->halted) {
         cycles = 4;
     } else {
         uint8_t opcode = sm83_fetch8(sm83);
-        cycles = (sm83_opcode_table[opcode].handler)(sm83, opcode);
+        cycles = sm83_opcode_table[opcode].handler(sm83, opcode);
+        sm83->registers.pc += sm83_opcode_table[opcode].length;
     }
 
     sm83->total_cycles += cycles;
@@ -91,7 +89,28 @@ uint16_t sm83_read_r16(sm83_t* sm83, uint8_t pair) {
         case 2: return (uint16_t)(sm83->registers.h << 8) | (uint16_t)sm83->registers.l;
         case 3: return sm83->registers.sp;
         default:
-                NO_IMPL
+            NO_IMPL
+    }
+}
+
+uint16_t sm83_read_r16stk(sm83_t* sm83, uint8_t pair) {
+    switch (pair) {
+        case 0: return (uint16_t)(sm83->registers.b << 8) | (uint16_t)sm83->registers.c;
+        case 1: return (uint16_t)(sm83->registers.d << 8) | (uint16_t)sm83->registers.e;
+        case 2: return (uint16_t)(sm83->registers.h << 8) | (uint16_t)sm83->registers.l;
+        case 3: return (uint16_t)(sm83->registers.a << 8) | (uint16_t)sm83->registers.f;
+        default:
+            NO_IMPL
+    }
+}
+
+uint16_t sm83_read_r16mem(sm83_t* sm83, uint8_t pair) {
+    switch (pair) {
+        case 0: return (uint16_t)(sm83->registers.b << 8) | (uint16_t)sm83->registers.c;
+        case 1: return (uint16_t)(sm83->registers.d << 8) | (uint16_t)sm83->registers.e;
+        case 2: case 3: return (uint16_t)(sm83->registers.h << 8) | (uint16_t)sm83->registers.l;
+        default:
+            NO_IMPL
     }
 }
 
@@ -113,7 +132,48 @@ void sm83_write_r16(sm83_t* sm83, uint8_t pair, uint16_t value) {
         case 3: 
             sm83->registers.sp = value;
         default:
-                NO_IMPL
+            NO_IMPL
+    }
+}
+
+void sm83_write_r16stk(sm83_t* sm83, uint8_t pair, uint16_t value) {
+    switch (pair) {
+        case 0: 
+            sm83->registers.b = (uint8_t)((value & 0xFF00) >> 8);
+            sm83->registers.c = (uint8_t)(value & 0x00FF);
+            break;
+        case 1:
+            sm83->registers.d = (uint8_t)((value & 0xFF00) >> 8);
+            sm83->registers.e = (uint8_t)(value & 0x00FF);
+            break;
+        case 2: 
+            sm83->registers.h = (uint8_t)((value & 0xFF00) >> 8);
+            sm83->registers.l = (uint8_t)(value & 0x00FF);
+            break;
+        case 3: 
+            sm83->registers.a = (uint8_t)((value & 0xFF00) >> 8);
+            sm83_update_flags(sm83, SM83_FLAG_N | SM83_FLAG_Z | SM83_FLAG_H | SM83_FLAG_C, (uint8_t)(value & 0x00FF));
+        default:
+            NO_IMPL
+    }
+}
+
+void sm83_write_r16mem(sm83_t* sm83, uint8_t pair, uint16_t value) {
+    switch (pair) {
+        case 0: 
+            sm83->registers.b = (uint8_t)((value & 0xFF00) >> 8);
+            sm83->registers.c = (uint8_t)(value & 0x00FF);
+            break;
+        case 1:
+            sm83->registers.d = (uint8_t)((value & 0xFF00) >> 8);
+            sm83->registers.e = (uint8_t)(value & 0x00FF);
+            break;
+        case 2: case 3: 
+            sm83->registers.h = (uint8_t)((value & 0xFF00) >> 8);
+            sm83->registers.l = (uint8_t)(value & 0x00FF);
+            break;
+        default:
+            NO_IMPL
     }
 }
 
@@ -132,9 +192,17 @@ void sm83_update_flags(sm83_t* sm83, uint8_t mask, uint8_t values) {
     sm83->registers.f &= SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C;
 }
 
-static uint8_t sm83_fetch8(sm83_t* sm83) {
-    uint8_t value = bus_read8(sm83->bus, sm83->registers.pc);
-    sm83->registers.pc++;
+/* Fetches the next byte in ROM and increments the program counter. */
+uint8_t sm83_fetch8(sm83_t* sm83) {
+    uint8_t value = bus_read8(sm83->bus, sm83->registers.pc++);
 
     return value;
+}
+
+/* Fetches the next 2 bytes in ROM and increments the program counter twice. */
+uint16_t sm83_fetch16(sm83_t* sm83) {
+    uint8_t low = sm83_fetch8(sm83);
+    uint8_t high = sm83_fetch8(sm83);
+
+    return ((uint16_t)high << 8) | (uint16_t)low;
 }
