@@ -118,16 +118,16 @@ uint16_t sm83_read_r16mem(sm83_t* sm83, uint8_t pair) {
 void sm83_write_r16(sm83_t* sm83, uint8_t pair, uint16_t value) {
     switch (pair) {
         case 0: 
-            sm83->registers.b = (uint8_t)((value & 0xFF00) >> 8);
-            sm83->registers.c = (uint8_t)(value & 0x00FF);
+            sm83->registers.b = (uint8_t)(value >> 8);
+            sm83->registers.c = (uint8_t)(value & 0xFF);
             break;
         case 1:
-            sm83->registers.d = (uint8_t)((value & 0xFF00) >> 8);
-            sm83->registers.e = (uint8_t)(value & 0x00FF);
+            sm83->registers.d = (uint8_t)(value >> 8);
+            sm83->registers.e = (uint8_t)(value & 0xFF);
             break;
         case 2: 
-            sm83->registers.h = (uint8_t)((value & 0xFF00) >> 8);
-            sm83->registers.l = (uint8_t)(value & 0x00FF);
+            sm83->registers.h = (uint8_t)(value >> 8);
+            sm83->registers.l = (uint8_t)(value & 0xFF);
             break;
         case 3: 
             sm83->registers.sp = value;
@@ -139,20 +139,20 @@ void sm83_write_r16(sm83_t* sm83, uint8_t pair, uint16_t value) {
 void sm83_write_r16stk(sm83_t* sm83, uint8_t pair, uint16_t value) {
     switch (pair) {
         case 0: 
-            sm83->registers.b = (uint8_t)((value & 0xFF00) >> 8);
-            sm83->registers.c = (uint8_t)(value & 0x00FF);
+            sm83->registers.b = (uint8_t)(value >> 8);
+            sm83->registers.c = (uint8_t)(value & 0xFF);
             break;
         case 1:
-            sm83->registers.d = (uint8_t)((value & 0xFF00) >> 8);
-            sm83->registers.e = (uint8_t)(value & 0x00FF);
+            sm83->registers.d = (uint8_t)(value >> 8);
+            sm83->registers.e = (uint8_t)(value & 0xFF);
             break;
         case 2: 
-            sm83->registers.h = (uint8_t)((value & 0xFF00) >> 8);
-            sm83->registers.l = (uint8_t)(value & 0x00FF);
+            sm83->registers.h = (uint8_t)(value >> 8);
+            sm83->registers.l = (uint8_t)(value & 0xFF);
             break;
         case 3: 
-            sm83->registers.a = (uint8_t)((value & 0xFF00) >> 8);
-            sm83_update_flags(sm83, SM83_FLAG_N | SM83_FLAG_Z | SM83_FLAG_H | SM83_FLAG_C, (uint8_t)(value & 0x00FF));
+            sm83->registers.a = (uint8_t)(value >> 8);
+            sm83_update_flags(sm83, SM83_FLAG_N | SM83_FLAG_Z | SM83_FLAG_H | SM83_FLAG_C, (uint8_t)(value & 0xFF));
         default:
             NO_IMPL
     }
@@ -161,16 +161,16 @@ void sm83_write_r16stk(sm83_t* sm83, uint8_t pair, uint16_t value) {
 void sm83_write_r16mem(sm83_t* sm83, uint8_t pair, uint16_t value) {
     switch (pair) {
         case 0: 
-            sm83->registers.b = (uint8_t)((value & 0xFF00) >> 8);
-            sm83->registers.c = (uint8_t)(value & 0x00FF);
+            sm83->registers.b = (uint8_t)(value >> 8);
+            sm83->registers.c = (uint8_t)(value & 0xFF);
             break;
         case 1:
-            sm83->registers.d = (uint8_t)((value & 0xFF00) >> 8);
-            sm83->registers.e = (uint8_t)(value & 0x00FF);
+            sm83->registers.d = (uint8_t)(value >> 8);
+            sm83->registers.e = (uint8_t)(value & 0xFF);
             break;
         case 2: case 3: 
-            sm83->registers.h = (uint8_t)((value & 0xFF00) >> 8);
-            sm83->registers.l = (uint8_t)(value & 0x00FF);
+            sm83->registers.h = (uint8_t)(value >> 8);
+            sm83->registers.l = (uint8_t)(value & 0xFF);
             break;
         default:
             NO_IMPL
@@ -204,5 +204,5 @@ uint16_t sm83_fetch16(sm83_t* sm83) {
     uint8_t low = sm83_fetch8(sm83);
     uint8_t high = sm83_fetch8(sm83);
 
-    return ((uint16_t)high << 8) | (uint16_t)low;
+    return ((uint16_t)high << 8) | low;
 }

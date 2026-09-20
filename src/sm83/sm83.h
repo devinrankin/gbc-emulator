@@ -6,10 +6,14 @@
 #include "../bus.h"
 
 #define SM83_R8_A 7
+#define SM83_R8_C 1
 #define SM83_R8_HLMEM 6
 
 #define SM83_R16_HL 2
 #define SM83_R16_SP 3
+
+#define SM83_R16MEM_HLI 2
+#define SM83_R16MEM_HLD 3
 
 #define SM83_FLAG_Z 0x80
 #define SM83_FLAG_N 0x40
