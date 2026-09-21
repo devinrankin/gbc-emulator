@@ -15,10 +15,10 @@
 #define SM83_R16MEM_HLI 2
 #define SM83_R16MEM_HLD 3
 
-#define SM83_FLAG_Z 0x80
-#define SM83_FLAG_N 0x40
-#define SM83_FLAG_H 0x20
-#define SM83_FLAG_C 0x10
+#define SM83_FLAG_Z_MASK (1u << 7)
+#define SM83_FLAG_N_MASK (1u << 6)
+#define SM83_FLAG_H_MASK (1u << 5)
+#define SM83_FLAG_C_MASK (1u << 4)
 
 typedef struct {
     uint8_t b;

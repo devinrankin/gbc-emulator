@@ -34,10 +34,10 @@ uint16_t alu_add16(sm83_t* sm83, uint16_t lhs, uint16_t rhs) {
 
     uint8_t flags = 0;
 
-    if (((lhs & 0x0FFF) + (rhs & 0x0FFF)) > 0x0FFF) flags |= SM83_FLAG_H;
-    if (sum > 0xFFFF) flags |= SM83_FLAG_C;
+    if (((lhs & 0x0FFF) + (rhs & 0x0FFF)) > 0x0FFF) flags |= SM83_FLAG_H_MASK;
+    if (sum > 0xFFFF) flags |= SM83_FLAG_C_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return result;
 }
@@ -49,10 +49,10 @@ uint16_t alu_add_sp_e8(sm83_t* sm83, uint16_t sp, int8_t offset) {
 
     uint8_t flags = 0;
 
-    if (((sp & 0x000F) + (immediate & 0x0F)) > 0x0F) flags |= SM83_FLAG_H;
-    if (((sp & 0x00FF) + immediate) > 0xFF) flags |= SM83_FLAG_C;
+    if (((sp & 0x000F) + (immediate & 0x0F)) > 0x0F) flags |= SM83_FLAG_H_MASK;
+    if (((sp & 0x00FF) + immediate) > 0xFF) flags |= SM83_FLAG_C_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return result;
 }
@@ -62,11 +62,11 @@ static uint8_t alu_add(sm83_t* sm83, uint8_t lhs, uint8_t rhs, uint8_t carry_in)
 
     uint8_t flags = 0;
 
-    if(result == 0) flags |= SM83_FLAG_Z;
-    if((lhs & 0x0F) + (rhs & 0x0F) + carry_in > 0x0F) flags |= SM83_FLAG_H;
-    if(result + carry_in > 0xFF) flags |= SM83_FLAG_C;
+    if(result == 0) flags |= SM83_FLAG_Z_MASK;
+    if((lhs & 0x0F) + (rhs & 0x0F) + carry_in > 0x0F) flags |= SM83_FLAG_H_MASK;
+    if(result + carry_in > 0xFF) flags |= SM83_FLAG_C_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
     return (uint8_t)result;
 }
 
@@ -75,12 +75,12 @@ static uint8_t alu_sub(sm83_t* sm83, uint8_t lhs, uint8_t rhs, uint8_t carry_in)
 
     uint8_t flags = 0;
 
-    if(result == 0) flags |= SM83_FLAG_Z;
-    flags |= SM83_FLAG_N;
-    if((lhs & 0x0F) < ((rhs & 0x0F) + carry_in)) flags |= SM83_FLAG_H;
-    if(lhs < (uint16_t)rhs + carry_in) flags |= SM83_FLAG_C;
+    if(result == 0) flags |= SM83_FLAG_Z_MASK;
+    flags |= SM83_FLAG_N_MASK;
+    if((lhs & 0x0F) < ((rhs & 0x0F) + carry_in)) flags |= SM83_FLAG_H_MASK;
+    if(lhs < (uint16_t)rhs + carry_in) flags |= SM83_FLAG_C_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
     return (uint8_t)result;
 }
 
@@ -89,10 +89,10 @@ static uint8_t alu_and(sm83_t* sm83, uint8_t lhs, uint8_t rhs) {
 
     uint8_t flags = 0;
 
-    if(result == 0) flags |= SM83_FLAG_Z;
-    flags |= SM83_FLAG_H;
+    if(result == 0) flags |= SM83_FLAG_Z_MASK;
+    flags |= SM83_FLAG_H_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_H, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_H_MASK, flags);
     return result;
 }
 
@@ -101,9 +101,9 @@ static uint8_t alu_or(sm83_t* sm83, uint8_t lhs, uint8_t rhs) {
 
     uint8_t flags = 0;
 
-    if(result == 0) flags |= SM83_FLAG_Z;
+    if(result == 0) flags |= SM83_FLAG_Z_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK, flags);
     return result;
 }
 
@@ -112,9 +112,9 @@ static uint8_t alu_xor(sm83_t* sm83, uint8_t lhs, uint8_t rhs) {
 
     uint8_t flags = 0;
 
-    if(result == 0) flags |= SM83_FLAG_Z;
+    if(result == 0) flags |= SM83_FLAG_Z_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK, flags);
     return result;
 }
 

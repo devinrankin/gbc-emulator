@@ -157,7 +157,7 @@ void sm83_write_r16stk(sm83_t* sm83, uint8_t pair, uint16_t value) {
             break;
         case 3: 
             sm83->registers.a = (uint8_t)(value >> 8);
-            sm83_update_flags(sm83, SM83_FLAG_N | SM83_FLAG_Z | SM83_FLAG_H | SM83_FLAG_C, (uint8_t)(value & 0xFF));
+            sm83_update_flags(sm83, SM83_FLAG_N_MASK | SM83_FLAG_Z_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, (uint8_t)(value & 0xFF));
         default:
             NO_IMPL
     }
@@ -183,18 +183,18 @@ void sm83_write_r16mem(sm83_t* sm83, uint8_t pair, uint16_t value) {
 }
 
 /* Returns one of the Z, N, H, or C flags.
- * Compatible masks: SM83_FLAG_Z, SM83_FLAG_N, SM83_FLAG_H, SM83_FLAG_C. */
+ * Compatible masks: SM83_FLAG_Z_MASK, SM83_FLAG_N_MASK, SM83_FLAG_H_MASK, SM83_FLAG_C_MASK. */
 bool sm83_get_flag(sm83_t* sm83, uint8_t flag) {
     return (sm83->registers.f & flag) != 0;
 }
 
 /* Given a mask of affected flags and their new values, updates the flag register. 
- * Example usage: sm83_update_flags(sm83, SM83_FLAG_N | SM83_FLAG_C, n | c) */
+ * Example usage: sm83_update_flags(sm83, SM83_FLAG_N_MASK | SM83_FLAG_C_MASK, n | c) */
 void sm83_update_flags(sm83_t* sm83, uint8_t mask, uint8_t values) {
     sm83->registers.f = (sm83->registers.f & (uint8_t)~mask) | (values & mask);
 
     /* Ensures the lower 4 bits of F to 0 should the above arithmetic set them. */
-    sm83->registers.f &= SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C;
+    sm83->registers.f &= SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK;
 }
 
 /* Fetches the next byte in ROM and increments the program counter. */

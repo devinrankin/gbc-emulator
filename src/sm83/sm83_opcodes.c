@@ -467,10 +467,10 @@ static unsigned op_inc_r8(sm83_t* sm83, uint8_t opcode) {
 
     uint8_t flags = 0;
 
-    if (result == 0) flags |= SM83_FLAG_Z;
-    if (half_carry) flags |= SM83_FLAG_H;
+    if (result == 0) flags |= SM83_FLAG_Z_MASK;
+    if (half_carry) flags |= SM83_FLAG_H_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK, flags);
     sm83_write_r8(sm83, operand, result);
 
     return operand == SM83_R8_HLMEM ? 3 : 1;
@@ -485,20 +485,20 @@ static unsigned op_dec_r8(sm83_t* sm83, uint8_t opcode) {
 
     uint8_t flags = 0;
 
-    if (result == 0) flags |= SM83_FLAG_Z;
-    flags |= SM83_FLAG_N;
-    if (half_carry) flags |= SM83_FLAG_H;
+    if (result == 0) flags |= SM83_FLAG_Z_MASK;
+    flags |= SM83_FLAG_N_MASK;
+    if (half_carry) flags |= SM83_FLAG_H_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK, flags);
     sm83_write_r8(sm83, operand, result);
 
     return operand == SM83_R8_HLMEM ? 3 : 1;
 }
 
 static unsigned op_ccf(sm83_t* sm83, uint8_t opcode) {
-    bool carry = sm83_get_flag(sm83, SM83_FLAG_C);
+    bool carry = sm83_get_flag(sm83, SM83_FLAG_C_MASK);
 
-    sm83_update_flags(sm83, SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, carry ? 0 : SM83_FLAG_C);
+    sm83_update_flags(sm83, SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, carry ? 0 : SM83_FLAG_C_MASK);
 
     return 1;
 }
@@ -506,7 +506,7 @@ static unsigned op_ccf(sm83_t* sm83, uint8_t opcode) {
 static unsigned op_scf(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
-    sm83_update_flags(sm83, SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, SM83_FLAG_C);
+    sm83_update_flags(sm83, SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, SM83_FLAG_C_MASK);
 
     return 1;
 }
@@ -515,9 +515,9 @@ static unsigned op_daa(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
     uint8_t a = sm83->registers.a;
-    bool n = sm83_get_flag(sm83, SM83_FLAG_N);
-    bool h = sm83_get_flag(sm83, SM83_FLAG_H);
-    bool c = sm83_get_flag(sm83, SM83_FLAG_C);
+    bool n = sm83_get_flag(sm83, SM83_FLAG_N_MASK);
+    bool h = sm83_get_flag(sm83, SM83_FLAG_H_MASK);
+    bool c = sm83_get_flag(sm83, SM83_FLAG_C_MASK);
 
     uint8_t correction = 0;
     if (!n) {
@@ -537,10 +537,10 @@ static unsigned op_daa(sm83_t* sm83, uint8_t opcode) {
 
     uint8_t flags = 0;
 
-    if (a == 0) flags |= SM83_FLAG_Z;
-    if (c) flags |= SM83_FLAG_C;
+    if (a == 0) flags |= SM83_FLAG_Z_MASK;
+    if (c) flags |= SM83_FLAG_C_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return 1;
 }
@@ -548,7 +548,7 @@ static unsigned op_daa(sm83_t* sm83, uint8_t opcode) {
 static unsigned op_cpl(sm83_t* sm83, uint8_t opcode) {
     sm83->registers.a = (uint8_t)~sm83->registers.a;
 
-    sm83_update_flags(sm83, SM83_FLAG_N | SM83_FLAG_H, SM83_FLAG_N | SM83_FLAG_H);
+    sm83_update_flags(sm83, SM83_FLAG_N_MASK | SM83_FLAG_H_MASK, SM83_FLAG_N_MASK | SM83_FLAG_H_MASK);
 
     return 1;
 }
@@ -607,10 +607,10 @@ static unsigned op_rlca(sm83_t* sm83, uint8_t opcode) {
 
     uint8_t result = (uint8_t)((value << 1) | (carry ? 1 : 0));
 
-    uint8_t flags = carry ? SM83_FLAG_C : 0;
+    uint8_t flags = carry ? SM83_FLAG_C_MASK : 0;
     
     sm83->registers.a = result;
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return 1;
 }
@@ -622,10 +622,10 @@ static unsigned op_rrca(sm83_t* sm83, uint8_t opcode) {
 
     uint8_t result = (uint8_t)((value >> 1) | (carry ? 0x80 : 0x00));
 
-    uint8_t flags = carry ? SM83_FLAG_C : 0;
+    uint8_t flags = carry ? SM83_FLAG_C_MASK : 0;
     
     sm83->registers.a = result;
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return 1;
 }
@@ -633,15 +633,15 @@ static unsigned op_rrca(sm83_t* sm83, uint8_t opcode) {
 static unsigned op_rla(sm83_t* sm83, uint8_t opcode) {
     uint8_t value = sm83->registers.a;
 
-    bool old_carry = sm83_get_flag(sm83, SM83_FLAG_C);
+    bool old_carry = sm83_get_flag(sm83, SM83_FLAG_C_MASK);
     bool carry = (value & 0x80) != 0;
 
     uint8_t result = (uint8_t)((value << 1) | (old_carry ? 1 : 0));
    
-    uint8_t flags = carry ? SM83_FLAG_C : 0;
+    uint8_t flags = carry ? SM83_FLAG_C_MASK : 0;
     
     sm83->registers.a = result;
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return 1;
 }
@@ -649,15 +649,15 @@ static unsigned op_rla(sm83_t* sm83, uint8_t opcode) {
 static unsigned op_rra(sm83_t* sm83, uint8_t opcode) {
     uint8_t value = sm83->registers.a;
 
-    bool old_carry = sm83_get_flag(sm83, SM83_FLAG_C);
+    bool old_carry = sm83_get_flag(sm83, SM83_FLAG_C_MASK);
     bool carry = (value & 0x01) != 0;
 
     uint8_t result = (uint8_t)((value >> 1) | (old_carry ? 0x80 : 0x00));
 
-    uint8_t flags = carry ? SM83_FLAG_C : 0;
+    uint8_t flags = carry ? SM83_FLAG_C_MASK : 0;
     
     sm83->registers.a = result;
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return 1;
 }
@@ -672,11 +672,11 @@ static unsigned op_rlc_r8(sm83_t* sm83, uint8_t opcode) {
 
     uint8_t flags = 0; 
 
-    if (result == 0) flags |= SM83_FLAG_Z;
-    if (carry) flags |= SM83_FLAG_C;
+    if (result == 0) flags |= SM83_FLAG_Z_MASK;
+    if (carry) flags |= SM83_FLAG_C_MASK;
     
     sm83_write_r8(sm83, index, result);
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return index == SM83_R8_HLMEM ? 4 : 2;
 }
@@ -691,11 +691,11 @@ static unsigned op_rrc_r8(sm83_t* sm83, uint8_t opcode) {
 
     uint8_t flags = 0; 
 
-    if (result == 0) flags |= SM83_FLAG_Z;
-    if (carry) flags |= SM83_FLAG_C;
+    if (result == 0) flags |= SM83_FLAG_Z_MASK;
+    if (carry) flags |= SM83_FLAG_C_MASK;
     
     sm83_write_r8(sm83, index, result);
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return index == SM83_R8_HLMEM ? 4 : 2;
 }
@@ -704,18 +704,18 @@ static unsigned op_rl_r8(sm83_t* sm83, uint8_t opcode) {
     uint8_t index = OPCODE_Z(opcode);
     uint8_t value = sm83_read_r8(sm83, index);
 
-    bool old_carry = sm83_get_flag(sm83, SM83_FLAG_C);
+    bool old_carry = sm83_get_flag(sm83, SM83_FLAG_C_MASK);
     bool carry = (value & 0x80) != 0;
 
     uint8_t result = (uint8_t)((value << 1) | (old_carry ? 1 : 0));
    
     uint8_t flags = 0; 
 
-    if (result == 0) flags |= SM83_FLAG_Z;
-    if (carry) flags |= SM83_FLAG_C;
+    if (result == 0) flags |= SM83_FLAG_Z_MASK;
+    if (carry) flags |= SM83_FLAG_C_MASK;
     
     sm83_write_r8(sm83, index, result);
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return index == SM83_R8_HLMEM ? 4 : 2;
 }
@@ -724,18 +724,18 @@ static unsigned op_rr_r8(sm83_t* sm83, uint8_t opcode) {
     uint8_t index = OPCODE_Z(opcode);
     uint8_t value = sm83_read_r8(sm83, index);
 
-    bool old_carry = sm83_get_flag(sm83, SM83_FLAG_C);
+    bool old_carry = sm83_get_flag(sm83, SM83_FLAG_C_MASK);
     bool carry = (value & 0x01) != 0;
 
     uint8_t result = (uint8_t)((value >> 1) | (old_carry ? 0x80 : 0x00));
 
     uint8_t flags = 0; 
 
-    if (result == 0) flags |= SM83_FLAG_Z;
-    if (carry) flags |= SM83_FLAG_C;
+    if (result == 0) flags |= SM83_FLAG_Z_MASK;
+    if (carry) flags |= SM83_FLAG_C_MASK;
     
     sm83_write_r8(sm83, index, result);
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return index == SM83_R8_HLMEM ? 4 : 2;
 }
@@ -750,11 +750,11 @@ static unsigned op_sla_r8(sm83_t* sm83, uint8_t opcode) {
 
     uint8_t flags = 0; 
 
-    if (result == 0) flags |= SM83_FLAG_Z;
-    if (carry) flags |= SM83_FLAG_C;
+    if (result == 0) flags |= SM83_FLAG_Z_MASK;
+    if (carry) flags |= SM83_FLAG_C_MASK;
     
     sm83_write_r8(sm83, index, result);
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
     
     return index == SM83_R8_HLMEM ? 4 : 2;
 }
@@ -769,11 +769,11 @@ static unsigned op_sra_r8(sm83_t* sm83, uint8_t opcode) {
 
     uint8_t flags = 0; 
 
-    if (result == 0) flags |= SM83_FLAG_Z;
-    if (carry) flags |= SM83_FLAG_C;
+    if (result == 0) flags |= SM83_FLAG_Z_MASK;
+    if (carry) flags |= SM83_FLAG_C_MASK;
     
     sm83_write_r8(sm83, index, result);
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return index == SM83_R8_HLMEM ? 4 : 2;
 }
@@ -785,7 +785,7 @@ static unsigned op_swap_r8(sm83_t* sm83, uint8_t opcode) {
     uint8_t result = (value << 4) | (value >> 4);
     
     sm83_write_r8(sm83, index, result);
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, result == 0 ? SM83_FLAG_Z : 0);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, result == 0 ? SM83_FLAG_Z_MASK : 0);
 
     return index == SM83_R8_HLMEM ? 4 : 2;
 }
@@ -800,11 +800,11 @@ static unsigned op_srl_r8(sm83_t* sm83, uint8_t opcode) {
 
     uint8_t flags = 0; 
 
-    if (result == 0) flags |= SM83_FLAG_Z;
-    if (carry) flags |= SM83_FLAG_C;
+    if (result == 0) flags |= SM83_FLAG_Z_MASK;
+    if (carry) flags |= SM83_FLAG_C_MASK;
     
     sm83_write_r8(sm83, index, result);
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H | SM83_FLAG_C, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
 
     return index == SM83_R8_HLMEM ? 4 : 2;
 }
@@ -818,10 +818,10 @@ static unsigned op_bit_b3_r8(sm83_t* sm83, uint8_t opcode) {
 
     uint8_t flags = 0;
 
-    if (!is_set) flags |= SM83_FLAG_Z;
-    flags |= SM83_FLAG_H;
+    if (!is_set) flags |= SM83_FLAG_Z_MASK;
+    flags |= SM83_FLAG_H_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z | SM83_FLAG_N | SM83_FLAG_H, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK, flags);
 
     return index == SM83_R8_HLMEM ? 4 : 2;
 }
@@ -875,10 +875,10 @@ static unsigned op_jp_cc_imm16(sm83_t* sm83, uint8_t opcode) {
 
     bool is_cond;
     switch (cond) {
-        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N); break;
-        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z); break;
-        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N); break;
-        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C); break;
+        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
     }
 
     if (is_cond) {
@@ -903,10 +903,10 @@ static unsigned op_jr_cc_imm8(sm83_t* sm83, uint8_t opcode) {
 
     bool is_cond;
     switch (cond) {
-        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N); break;
-        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z); break;
-        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N); break;
-        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C); break;
+        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
     }
 
     if (is_cond) {
@@ -935,10 +935,10 @@ static unsigned op_call_cc_imm16(sm83_t* sm83, uint8_t opcode) {
 
     bool is_cond;
     switch (cond) {
-        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N); break;
-        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z); break;
-        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N); break;
-        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C); break;
+        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
     }
 
     if (is_cond) {
@@ -964,10 +964,10 @@ static unsigned op_ret_cc(sm83_t* sm83, uint8_t opcode) {
 
     bool is_cond;
     switch (cond) {
-        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N); break;
-        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z); break;
-        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N); break;
-        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C); break;
+        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
     }
 
     if (is_cond) {
