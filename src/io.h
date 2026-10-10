@@ -13,7 +13,6 @@
 #define IO_ADDR_TIMA 0xFF05
 #define IO_ADDR_TMA 0xFF06
 #define IO_ADDR_TAC 0xFF07
-#define IO_ADDR_TIMER_END 0xFF07
 #define IO_ADDR_INTERRUPTS 0xFF0F
 #define IO_ADDR_NR10 0xFF10
 #define IO_ADDR_NR11 0xFF11
@@ -37,7 +36,6 @@
 #define IO_ADDR_NR51 0xFF25
 #define IO_ADDR_NR52 0xFF26
 #define IO_ADDR_WAVERAM 0xFF30
-#define IO_WAVERAM_SIZE 0x000F
 #define IO_ADDR_LCDC 0xFF40
 #define IO_ADDR_STAT 0xFF41
 #define IO_ADDR_SCY 0xFF42
@@ -66,6 +64,8 @@
 #define IO_ADDR_OBPD 0xFF6B
 #define IO_ADDR_OPRI 0xFF6C
 #define IO_ADDR_SVBK 0xFF70
+
+#define IO_WAVERAM_SIZE 0x000F
 
 typedef struct io {
     joypad_t* joypad;
