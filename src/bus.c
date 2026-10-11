@@ -1,5 +1,4 @@
 #include "bus.h"
-#include "mem/address_map.h"
 
 static uint8_t bus_read_vram(bus_t* bus, uint16_t address);
 static void bus_write_vram(bus_t* bus, uint16_t address, uint8_t value);
@@ -11,7 +10,6 @@ static void bus_set_wram_bank(bus_t* bus, uint8_t value);
 void bus_init(bus_t* bus, cartridge_t* cartridge, gbc_timer_t* timer) {
     *bus = (bus_t) {
         .cartridge = cartridge,
-        .timer = timer,
         .vram_bank = 0,
         .wram_bank = 1,
         .interrupt_flags = 0,
@@ -45,20 +43,8 @@ uint8_t bus_read8(bus_t* bus, uint16_t address) {
         return 0xFF;
     }
 
-    if(address == 0xFF0F) {
-        return bus->interrupt_flags;
-    }
-
-    if(address == BUS_REG_VBK) {
-        return bus->vram_bank | 0xFE;
-    }
-
-    if(address == BUS_REG_SVBK) {
-        return bus->wram_bank | 0xF8;
-    }
-
     if(address <= ADDR_IO_END) {
-        return bus->io[address - 0xFF00];
+        return io_read(bus->io, address); 
     }
 
     if(address <= ADDR_HRAM_END) {
@@ -99,23 +85,8 @@ void bus_write8(bus_t* bus, uint16_t address, uint8_t value) {
         return;
     }
 
-    if(address == 0xFF0F) {
-        bus->interrupt_flags = value;
-        return;
-    }
-
-    if(address == BUS_REG_VBK) {
-        bus_set_vram_bank(bus, value);
-        return;
-    }
-
-    if(address == BUS_REG_SVBK) {
-        bus_set_wram_bank(bus, value);
-        return;
-    }
-
     if(address <= ADDR_IO_END) {
-        bus->io[address - 0xFF00] = value;
+        io_write(bus->io, address, value);
         return;
     }
 
@@ -125,18 +96,6 @@ void bus_write8(bus_t* bus, uint16_t address, uint8_t value) {
     }
 
     bus->interrupt_enable = value;
-}
-
-uint16_t bus_read16(bus_t* bus, uint16_t address) {
-    uint8_t low = bus_read8(bus, address);
-    uint8_t high = bus_read8(bus, address + 1);
-
-    return (uint16_t)((high << 8) | low);
-}
-
-void bus_write16(bus_t* bus, uint16_t address, uint16_t value) {
-    bus_write8(bus, address, value & 0xFF);
-    bus_write8(bus, address + 1, value >> 8);
 }
 
 /* Returns the byte in VRAM pointed to by the specified address. */
@@ -180,7 +139,7 @@ static void bus_write_wram(bus_t* bus, uint16_t address, uint8_t value) {
 }
 
 static void bus_set_vram_bank(bus_t* bus, uint8_t value) {
-    bus->vram_bank = value & 0x01;
+    bus->vram_bank = value & 1;
 }
 
 static void bus_set_wram_bank(bus_t* bus, uint8_t value) {
