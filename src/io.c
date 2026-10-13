@@ -25,6 +25,7 @@ uint8_t io_read(io_t* io, uint16_t address) {
         case IO_ADDR_OBPI: return io->obpi;
         case IO_ADDR_OBPD: return io->obpd;
         case IO_ADDR_SVBK: return io->svbk;
+        case IO_ADDR_IE: return io->interrupt_enable;
         default: return 0xFF;
     }
 }
@@ -54,6 +55,7 @@ void io_write(io_t* io, uint16_t address, uint8_t value) {
         case IO_ADDR_OBPI: io->obpi = value; break;
         case IO_ADDR_OBPD: io->obpd = value; break;
         case IO_ADDR_SVBK: io->svbk = value; break;
+        case IO_ADDR_IE: io->interrupt_enable = value; break;
         default: break;
     }
 }

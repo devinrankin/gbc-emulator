@@ -81,15 +81,16 @@
 #define IO_ADDR_OPRI 0xFF6C
 #define IO_ADDR_SVBK 0xFF70
 
+#define IO_ADDR_IE 0xFFFF
+
 typedef struct io {
     joypad_t* joypad;
     gbc_timer_t* timer;
     apu_t* apu;
-
-    /* not sure if I want to define a variable for ALMOST EVERY register */
-    /* also might give them more descriptive names */
-
-    uint8_t interrupt_flags;
+    
+    /* IO registers */
+    uint8_t interrupt_enable;
+    uint8_t interrupt_flags; 
 
     uint8_t lcdc;
     uint8_t stat;
@@ -103,20 +104,18 @@ typedef struct io {
     uint8_t bgp;
     uint8_t obp0;
     uint8_t obp1;
-
-    uint8_t key0;
-    uint8_t key1;
-    uint8_t vbk;
-    uint8_t svbk;
+    
+    /* CGB Registers */
+    uint8_t key0; /* CGB boot-mode control: boot-ROM use only; sets CGB boot-mode (for DMG compatibility). */
+    uint8_t key1; /* Speed-switch control: Controls the speed of the system. Bit 7 reports current speed (0 = normal, 1 = double); bit 0 arms a switch to STOP. */
+    uint8_t vbk; /* VRAM bank select: Selects bank 0 or 1 mapped at 8000-9FFF. */
+    uint8_t svbk; /* WRAM bank select: Selects bank 1-7 mapped at D000-DFFF. Writing 0 will select bank 1. */
 
     uint8_t bgpi;
     uint8_t bgpd;
     uint8_t obpi;
     uint8_t obpd;
-
-    uint8_t storage[0x80];
 } io_t;
-
 
 uint8_t io_read(io_t* io, uint16_t address);
 void io_write(io_t* io, uint16_t address, uint8_t value);
