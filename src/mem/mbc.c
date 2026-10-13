@@ -3,6 +3,9 @@
 #define ROM_BANK_SIZE 0x4000
 #define RAM_BANK_SIZE 0x2000
 
+#define ROM_BANK0_END 0x4000
+#define ROM_BANKNN_END 0x8000
+
 static uint8_t mbc0_read(mbc_t* mbc, uint16_t address);
 static void mbc0_write(mbc_t* mbc, uint16_t address, uint8_t value);
 
@@ -130,7 +133,7 @@ static uint8_t mbc1_read(mbc_t* mbc, uint16_t address) {
         bank = ((size_t)(state->bank_high & 0x03) << 5) | (state->rom_bank_low & 0x1F);
 
         if ((bank & 0x1F) == 0)
-            bank++;
+            bank = 1;
 
         offset = bank * ROM_BANK_SIZE + (address - 0x4000);
         return rom_read(mbc, offset);

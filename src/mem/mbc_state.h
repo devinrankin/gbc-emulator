@@ -4,6 +4,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+typedef struct rtc {
+        uint8_t seconds;
+        uint8_t minutes;
+        uint8_t hours;
+        uint8_t days_low;
+        uint8_t days_high;
+} rtc_t;
+
 typedef struct {
     uint8_t rom_bank_low;
     uint8_t bank_high;
@@ -17,20 +25,12 @@ typedef struct {
 } mbc2_state_t;
 
 typedef struct {
-    struct rtc {
-        uint8_t seconds;
-        uint8_t minutes;
-        uint8_t hours;
-        uint8_t days_low;
-        uint8_t days_high;
-    };
-
     uint8_t rom_bank;
     uint8_t ram_rtc_select;
     bool ram_enabled;
 
-    struct rtc current_rtc;
-    struct rtc latched_rtc;
+    rtc_t current_rtc;
+    rtc_t latched_rtc;
    
     bool rtc_latched;
     uint8_t rtc_latch_value;
