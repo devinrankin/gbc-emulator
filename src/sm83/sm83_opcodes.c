@@ -287,7 +287,7 @@ static unsigned op_ld_r16mem_a(sm83_t* sm83, uint8_t opcode) {
     uint8_t pair = OPCODE_P(opcode);
 
     uint16_t address = sm83_read_r16mem(sm83, pair);
-    bus_write8(sm83->bus, address, sm83->registers.a);
+    bus_write8(sm83->bus, CONSUMER_SM83, address, sm83->registers.a);
 
     if (pair == SM83_R16MEM_HLI) {
         sm83_write_r16(sm83, SM83_R16_HL, address + 1);
@@ -302,7 +302,7 @@ static unsigned op_ld_a_r16mem(sm83_t* sm83, uint8_t opcode) {
     uint8_t pair = OPCODE_P(opcode);
 
     uint16_t address = sm83_read_r16mem(sm83, pair);
-    sm83->registers.a = bus_read8(sm83->bus, address);
+    sm83->registers.a = bus_read8(sm83->bus, CONSUMER_SM83, address);
 
     if (pair == SM83_R16MEM_HLI) {
         sm83_write_r16(sm83, SM83_R16_HL, address + 1);
@@ -317,7 +317,7 @@ static unsigned op_ld_a_imm16mem(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
     uint16_t address = sm83_fetch16(sm83);
-    sm83->registers.a = bus_read8(sm83->bus, address);
+    sm83->registers.a = bus_read8(sm83->bus, CONSUMER_SM83, address);
 
     return 4;
 }
@@ -326,14 +326,14 @@ static unsigned op_ld_imm16mem_a(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
     uint16_t address = sm83_fetch16(sm83);
-    bus_write8(sm83->bus, address, sm83->registers.a);
+    bus_write8(sm83->bus, CONSUMER_SM83, address, sm83->registers.a);
 
     return 4;
 }
 
 static unsigned op_ldh_a_cmem(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = 0xFF00 & sm83_read_r8(sm83, SM83_R8_C);
-    uint8_t value = bus_read8(sm83->bus, address);
+    uint8_t value = bus_read8(sm83->bus, CONSUMER_SM83, address);
 
     sm83->registers.a = value;
 
@@ -342,14 +342,14 @@ static unsigned op_ldh_a_cmem(sm83_t* sm83, uint8_t opcode) {
 
 static unsigned op_ldh_cmem_a(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = 0xFF00 & sm83_read_r8(sm83, SM83_R8_C);
-    bus_write8(sm83->bus, address, sm83->registers.a);
+    bus_write8(sm83->bus, CONSUMER_SM83, address, sm83->registers.a);
 
     return 2;
 }
 
 static unsigned op_ldh_a_imm8mem(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = 0xFF00 & sm83_fetch8(sm83);
-    uint8_t value = bus_read8(sm83->bus, address);
+    uint8_t value = bus_read8(sm83->bus, CONSUMER_SM83, address);
 
     sm83->registers.a = value;
 
@@ -358,7 +358,7 @@ static unsigned op_ldh_a_imm8mem(sm83_t* sm83, uint8_t opcode) {
 
 static unsigned op_ldh_imm8mem_a(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = 0xFF00 & sm83_fetch8(sm83);
-    bus_write8(sm83->bus, address, sm83->registers.a);
+    bus_write8(sm83->bus, CONSUMER_SM83, address, sm83->registers.a);
 
     return 3;
 }
@@ -381,9 +381,9 @@ static unsigned op_ld_imm16mem_sp(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = sm83_fetch16(sm83); 
     uint16_t sp = sm83->registers.sp;
 
-    bus_write8(sm83->bus, address, (uint8_t)(sp & 0xFF));
+    bus_write8(sm83->bus, CONSUMER_SM83, address, (uint8_t)(sp & 0xFF));
     address++;
-    bus_write8(sm83->bus, address, (uint8_t)(sp >> 8));
+    bus_write8(sm83->bus, CONSUMER_SM83, address, (uint8_t)(sp >> 8));
 
     return 5;
 }
@@ -1046,11 +1046,11 @@ static unsigned op_stop(sm83_t* sm83, uint8_t opcode) {
 /* Stack manipulation function definitions */
 static void stack_push(sm83_t* sm83, uint8_t value) {
     sm83->registers.sp--;
-    bus_write8(sm83->bus, sm83->registers.sp, value);
+    bus_write8(sm83->bus, CONSUMER_SM83, sm83->registers.sp, value);
 }
 
 static uint8_t stack_pop(sm83_t* sm83) {
-    uint8_t value = bus_read8(sm83->bus, sm83->registers.sp);
+    uint8_t value = bus_read8(sm83->bus, CONSUMER_SM83, sm83->registers.sp);
     sm83->registers.sp++;
 
     return value;
