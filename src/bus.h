@@ -6,12 +6,13 @@
 #include "mem/cartridge.h"
 #include "io.h"
 
-#define BUS_VRAM_SIZE (16 * SIZE_KIB)
 #define BUS_WRAM_SIZE (32 * SIZE_KIB)
 #define BUS_OAM_SIZE 0xA0
 #define BUS_HRAM_SIZE 0x7F
 
 #define BUS_VRAM_BANK_SIZE (8 * SIZE_KIB)
+#define BUS_VRAM_BANK_COUNT 2u
+
 #define BUS_WRAM_BANK_SIZE (4 * SIZE_KIB)
 
 
@@ -76,11 +77,17 @@
 /* Interrupt Enable register */
 #define ADDR_IE 0xFFFF
 
+typedef enum {
+    CONSUMER_NONE,
+    CONSUMER_SM83,
+    CONSUMER_PPU
+} consumer_t;
+
 typedef struct {
     cartridge_t* cartridge;
     io_t* io;
 
-    uint8_t vram[BUS_VRAM_SIZE];
+    uint8_t vram[BUS_VRAM_BANK_SIZE * BUS_VRAM_BANK_COUNT];
     uint8_t wram[BUS_WRAM_SIZE];
 
     uint8_t oam[BUS_OAM_SIZE];
@@ -94,9 +101,9 @@ typedef struct {
     uint8_t interrupt_enable;
 } bus_t;
 
-void bus_init(bus_t* bus, cartridge_t* cartridge, gbc_timer_t* timer);
+void bus_init(bus_t* bus, cartridge_t* cartridge);
 
-uint8_t bus_read8(bus_t* bus, uint16_t address);
-void bus_write8(bus_t* bus, uint16_t address, uint8_t value);
+uint8_t bus_read8(bus_t* bus, consumer_t consumer, uint16_t address);
+void bus_write8(bus_t* bus, consumer_t consumer, uint16_t address, uint8_t value);
 
 #endif
