@@ -13,7 +13,13 @@ SOURCES := \
 	$(SRC_DIR)/mem/mbc.c \
 	$(SRC_DIR)/sm83/sm83.c \
 	$(SRC_DIR)/sm83/sm83_alu.c \
-	$(SRC_DIR)/sm83/sm83_opcodes.c
+	$(SRC_DIR)/sm83/sm83_opcodes.c \
+	$(SRC_DIR)/ppu/ppu.c \
+	$(SRC_DIR)/ppu/ppu_fifo.c \
+	$(SRC_DIR)/io.c \
+	$(SRC_DIR)/apu.c \
+	$(SRC_DIR)/joypad.c \
+	$(SRC_DIR)/timer.c
 
 OBJECTS := $(SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
