@@ -34,7 +34,7 @@ OBJECTS := $(SOURCES:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 all: build
 
-build: $(BUILD_DIR)/$(PROJ_NAME)
+build: $(TARGET)
 
 lib: 
 	cmake -S $(SDL_SRC) -B $(SDL_BUILD) \
