@@ -22,7 +22,7 @@ typedef struct {
 } sm83_instruction_t;
 
 extern const sm83_instruction_t sm83_opcode_table[256];
-extern const sm83_instruction_t sm83_cb_opcode_table[256];
+extern const sm83_instruction_t sm83_opcode_table_cb[256];
 
 #endif
 

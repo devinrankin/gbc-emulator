@@ -875,9 +875,9 @@ static unsigned op_jp_cc_imm16(sm83_t* sm83, uint8_t opcode) {
 
     bool is_cond;
     switch (cond) {
-        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 0: is_cond = !sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
         case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
-        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
         case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
     }
 
@@ -903,9 +903,9 @@ static unsigned op_jr_cc_imm8(sm83_t* sm83, uint8_t opcode) {
 
     bool is_cond;
     switch (cond) {
-        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 0: is_cond = !sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
         case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
-        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
         case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
     }
 
@@ -935,9 +935,9 @@ static unsigned op_call_cc_imm16(sm83_t* sm83, uint8_t opcode) {
 
     bool is_cond;
     switch (cond) {
-        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 0: is_cond = !sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
         case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
-        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
         case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
     }
 
@@ -964,9 +964,9 @@ static unsigned op_ret_cc(sm83_t* sm83, uint8_t opcode) {
 
     bool is_cond;
     switch (cond) {
-        case 0: is_cond = sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 0: is_cond = !sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
         case 1: is_cond = sm83_get_flag(sm83, SM83_FLAG_Z_MASK); break;
-        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_N_MASK); break;
+        case 2: is_cond = !sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
         case 3: is_cond = sm83_get_flag(sm83, SM83_FLAG_C_MASK); break;
     }
 
@@ -993,7 +993,7 @@ static unsigned op_rst(sm83_t* sm83, uint8_t opcode) {
 
     stack_push(sm83, high);
     stack_push(sm83, low);
-
+    
     sm83->registers.pc = vector;
 
     return 4;

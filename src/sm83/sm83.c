@@ -9,6 +9,7 @@ void sm83_init(sm83_t* sm83, bus_t* bus) {
         .total_cycles = 0
     };
     sm83->registers.pc = 0x100;
+    sm83->registers.sp = 0xFFFE;
     
     sm83->bus = bus;
 }
@@ -39,14 +40,14 @@ uint32_t sm83_step(sm83_t* sm83) {
     uint32_t cycles;
 
     if (sm83->halted) {
-        printf("CPU Halted...\n");
-        cycles = 4;
+        return 4;
+    }         
+
+    uint8_t opcode = sm83_fetch8(sm83);
+    if (opcode == 0xCB) {
+        opcode = sm83_fetch8(sm83);
+        cycles = sm83_opcode_table_cb[opcode].handler(sm83, opcode);
     } else {
-        printf("Fetching opcode at $%2.2x...\n", sm83->registers.pc);
-        uint8_t opcode = sm83_fetch8(sm83);
-        printf("Opcode: %x\n", opcode);
-        
-        printf("Current Instruction: %s\n", sm83_opcode_table[opcode].name);
         cycles = sm83_opcode_table[opcode].handler(sm83, opcode);
     }
 
