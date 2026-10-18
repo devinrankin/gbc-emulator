@@ -66,7 +66,4 @@ typedef struct ppu {
 void ppu_init(ppu_t* ppu, bus_t* bus);
 void ppu_step(ppu_t* ppu);
 
-uint8_t ppu_read(ppu_t* ppu, uint16_t address);
-void ppu_write(ppu_t* ppu, uint16_t address, uint8_t value);
-
 #endif

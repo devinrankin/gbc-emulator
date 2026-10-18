@@ -34,6 +34,8 @@
 #define DATA_ROW_SIZE 2u
 #define DATA_ROW_MASK 0x7
 
+static uint8_t ppu_read(ppu_t* ppu, uint16_t address);
+static void ppu_write(ppu_t* ppu, uint16_t address, uint8_t value);
 static uint16_t ppu_tile_get_map_address(const ppu_t* ppu);
 static uint16_t ppu_tile_get_data_address(const ppu_t* ppu, uint8_t tile, uint8_t row);
 static void ppu_fetch_tile(ppu_t* ppu);
@@ -118,11 +120,11 @@ void ppu_step(ppu_t* ppu) {
     }
 }
 
-uint8_t ppu_read(ppu_t* ppu, uint16_t address) {
+static uint8_t ppu_read(ppu_t* ppu, uint16_t address) {
     return bus_read8(ppu->bus, BUS_MASTER_PPU, address);
 }
 
-void ppu_write(ppu_t* ppu, uint16_t address, uint8_t value) {
+static void ppu_write(ppu_t* ppu, uint16_t address, uint8_t value) {
     bus_write8(ppu->bus, BUS_MASTER_PPU, address, value);
 }
 
