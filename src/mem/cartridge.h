@@ -81,7 +81,7 @@ typedef struct cartridge {
     cartridge_cgb_support_t mode;
 } cartridge_t;
 
-void cartridge_init(cartridge_t* cartridge, const char* path);
+bool cartridge_init(cartridge_t* cartridge, const char* path);
 void cartridge_display_info(cartridge_t* cartridge);
 
 uint8_t cartridge_read(cartridge_t* cartridge, uint16_t address);

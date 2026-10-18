@@ -12,8 +12,10 @@ static void cartridge_header_parse_title(cartridge_header_t* header, const uint8
 static size_t cartridge_get_ram_size(uint8_t header_value);
 static mbc_type_t cartridge_identify_mbc_type(uint8_t type);
 
-void cartridge_init(cartridge_t* cartridge, const char* path) {
-    cartridge_load_rom(cartridge->rom, path);
+bool cartridge_init(cartridge_t* cartridge, const char* path) {
+    if(!cartridge_load_rom(cartridge->rom, path)) {
+        return false;
+    }
     cartridge_parse_header(&cartridge->header, cartridge->rom);
    
     /* ROM size calculation provided here: https://gbdev.io/pandocs/The_Cartridge_Header.html#0148--rom-size */
@@ -22,6 +24,8 @@ void cartridge_init(cartridge_t* cartridge, const char* path) {
 
     mbc_type_t type = cartridge_identify_mbc_type(cartridge->header.cartridge_type);
     mbc_init(&cartridge->mbc, type, cartridge->rom, cartridge->ram);
+
+    return true;
 }
 
 void cartridge_display_info(cartridge_t* cartridge) {
