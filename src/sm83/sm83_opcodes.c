@@ -1014,10 +1014,3 @@ static unsigned op_stop(sm83_t* sm83, uint8_t opcode) {
 
     return 1;
 }
-
-/* Fetches the next byte in ROM and increments the program counter. */
-uint8_t sm83_fetch8(sm83_t* sm83) {
-    uint8_t value = bus_read(sm83->bus, BUS_MASTER_SM83, sm83->registers.pc++);
-
-    return value;
-}
