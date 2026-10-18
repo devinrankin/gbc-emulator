@@ -34,22 +34,104 @@
 #define DATA_ROW_SIZE 2u
 #define DATA_ROW_MASK 0x7
 
-/* Fetcher misc. */
-#define FETCH_STATE_DOTS 2u
-
 static uint16_t ppu_tile_get_map_address(const ppu_t* ppu);
 static uint16_t ppu_tile_get_data_address(const ppu_t* ppu, uint8_t tile, uint8_t row);
 static void ppu_fetch_tile(ppu_t* ppu);
 static void ppu_fetch_tile_data_low(ppu_t* ppu);
 static void ppu_fetch_tile_data_high(ppu_t* ppu);
 static bool ppu_fetch_push(ppu_t* ppu);
+static void ppu_fetcher_step(ppu_t* ppu);
+
+void ppu_init(ppu_t* ppu, bus_t* bus) {
+    ppu->bus = bus;
+
+    ppu_fifo_clear(&ppu->bg_fifo);
+    ppu_fifo_clear(&ppu->obj_fifo);
+}
+
+void ppu_step(ppu_t* ppu) {
+    ppu->line_dots++;
+
+    /* Entering PPU step. There are roughly 4 line_dots per M-cycle and 2 per Double-Speed M-cycle. */
+    switch (ppu->mode) {
+        /* OAM Scan Mode */
+        case PPU_MODE2:
+            /* TODO: OAM stuff */
+            if (ppu->line_dots == PPU_MODE2_DOTS) {  
+                ppu->xpos = 0;
+            }
+            break;
+
+        /* Drawing Mode */
+        case PPU_MODE3:
+            if (ppu->xpos == 160) {
+                ppu->mode = PPU_MODE0;
+            }
+
+            if (ppu_fifo_empty(&ppu->bg_fifo)) {
+                ppu_fetcher_step(ppu);
+            }
+            
+            ppu_pixel_t pixel;
+            if (!ppu_fifo_pop(&ppu->bg_fifo, &pixel)) {
+                break;
+            }
+
+            if (ppu->discard_pixels != 0) {
+                ppu->discard_pixels--;
+            } else {
+                ppu->framebuffer[ppu->xpos * ppu->bus->io.ly] = pixel;
+                ppu->xpos++;
+            }
+
+            break;
+        /* H-Blank Mode */
+        case PPU_MODE0: {
+            if (ppu->line_dots != PPU_LINE_DOTS) {
+                break;
+            }
+
+            ppu->line_dots = 0;
+            ppu->bus->io.ly++;
+           
+            if (ppu->bus->io.ly == PPU_LY_VBLANK) {
+                ppu->mode = PPU_MODE1;
+            } else {
+                ppu->mode = PPU_MODE2;
+            }
+        
+            break;
+        }
+
+        /* V-Blank Mode */
+        case PPU_MODE1:
+            /* One scanline of V-Blank is equivalent to the duration of modes 2, 3, and 0 combined. */
+            if (ppu->line_dots == PPU_LINE_DOTS) {
+                ppu->line_dots = 0;
+                ppu->bus->io.ly++;
+            }
+
+            if (ppu->bus->io.ly == PPU_LY_BOTTOM) {
+                ppu->mode = PPU_MODE2;
+            }
+            break;
+    }
+}
+
+uint8_t ppu_read(ppu_t* ppu, uint16_t address) {
+    return bus_read8(ppu->bus, BUS_MASTER_PPU, address);
+}
+
+void ppu_write(ppu_t* ppu, uint16_t address, uint8_t value) {
+    bus_write8(ppu->bus, BUS_MASTER_PPU, address, value);
+}
 
 static uint16_t ppu_tile_get_map_address(const ppu_t* ppu) {
-    if (BIT(ppu->bus->io->lcdc, LCDC_BG_TILE_MAP_AREA) && !BETWEEN(ppu->xpos, 0, ppu->bus->io->wx)) {
+    if (BIT(ppu->bus->io.lcdc, LCDC_BG_TILE_MAP_AREA) && !BETWEEN(ppu->xpos, 0, ppu->bus->io.wx)) {
         return ADDR_VRAM_TILEMAP1_START;
     }
 
-    if (BIT(ppu->bus->io->lcdc, LCDC_WIN_TILE_MAP_AREA) && BETWEEN(ppu->xpos, 0, ppu->bus->io->wx)) {
+    if (BIT(ppu->bus->io.lcdc, LCDC_WIN_TILE_MAP_AREA) && BETWEEN(ppu->xpos, 0, ppu->bus->io.wx)) {
         return ADDR_VRAM_TILEMAP1_START;
     }
 
@@ -57,7 +139,7 @@ static uint16_t ppu_tile_get_map_address(const ppu_t* ppu) {
 }
 
 static uint16_t ppu_tile_get_data_address(const ppu_t* ppu, uint8_t tile, uint8_t row) {
-    if (BIT(ppu->bus->io->lcdc, LCDC_BGW_TILE_DATA_AREA)) {
+    if (BIT(ppu->bus->io.lcdc, LCDC_BGW_TILE_DATA_AREA)) {
         return (uint16_t)(VRAM_TILEDATA_UNSIGNED_ADDR + (uint16_t)tile * DATA_TILE_SIZE + (uint16_t)row * DATA_ROW_SIZE);
     }
     return (uint16_t)(VRAM_TILEDATA_SIGNED_ADDR + (int16_t)(int8_t)tile * DATA_TILE_SIZE + (int16_t)row * DATA_ROW_SIZE);
@@ -68,12 +150,17 @@ static void ppu_fetch_tile(ppu_t* ppu) {
     uint8_t tile_y;
     uint8_t tile_row;
     uint8_t map_base;
-
-    bool window_enabled = ppu->y_cond && BIT(ppu->bus->io->lcdc, LCDC_WIN_EN);
-    uint8_t window_left = ppu->bus->io->wx - 7;
+    // TODO: refine
+    bool window_enabled = ppu->y_cond && BIT(ppu->bus->io.lcdc, LCDC_WIN_EN);
+    uint8_t window_left = ppu->bus->io.wx - 7; // subtract 7 for some reason
     
     /* window rendering begins; reset fifo and fetcher */
     if (window_enabled && ppu->xpos >= window_left) {
+        ppu->fetch_tile = 0;
+        ppu->fetch_tile_attr = 0;
+        ppu->fetch_low = 0;
+        ppu->fetch_high = 0;
+        ppu->fetch_row = 0;
         ppu->fetch_tile_x = 0;
         ppu_fifo_clear(&ppu->bg_fifo); 
     }
@@ -85,17 +172,16 @@ static void ppu_fetch_tile(ppu_t* ppu) {
         tile_y = (ppu->window_line >> 3) & 0x1F;
         tile_row = ppu->window_line & DATA_ROW_MASK;
     } else {    
-        tile_x = ((ppu->bus->io->scx + ppu->xpos) >> 3) & 0x1F;
-        tile_y = (ppu->bus->io->scy + ppu->bus->io->ly) & 0xFF;
+        tile_x = ((ppu->bus->io.scx + ppu->xpos) >> 3) & 0x1F;
+        tile_y = (ppu->bus->io.scy + ppu->bus->io.ly) & 0xFF;
         tile_row = tile_y & DATA_ROW_MASK;   
     }
 
     uint16_t map_address = map_base + (uint16_t)tile_y * MAP_ROWS + tile_x;
-    ppu->fetch_tile = bus_read8(ppu->bus, CONSUMER_PPU, map_address);
-    ppu->fetch_tile_attr = bus_read8(ppu->bus, CONSUMER_PPU, map_address + BUS_VRAM_BANK_SIZE);
+    ppu->fetch_tile = ppu_read(ppu, map_address);
+    ppu->fetch_tile_attr = ppu_read(ppu, map_address + ADDR_VRAM_SIZE);
     ppu->fetch_row = tile_row;
 }
-
 static void ppu_fetch_tile_data_low(ppu_t* ppu) {
     if(ppu->fetch_tile_attr & 0x40) {
         ppu->fetch_row = DATA_ROW_MASK - ppu->fetch_row;
@@ -103,13 +189,13 @@ static void ppu_fetch_tile_data_low(ppu_t* ppu) {
 
     uint16_t data_address = ppu_tile_get_data_address(ppu, ppu->fetch_tile, ppu->fetch_row);
     
-    ppu->fetch_low = bus_read8(ppu->bus, CONSUMER_PPU, data_address);
+    ppu->fetch_low = ppu_read(ppu, data_address);
 }
 
 static void ppu_fetch_tile_data_high(ppu_t* ppu) {
     uint16_t data_address = ppu_tile_get_data_address(ppu, ppu->fetch_tile, ppu->fetch_row);
 
-    ppu->fetch_high = bus_read8(ppu->bus, CONSUMER_PPU, data_address + 1);
+    ppu->fetch_high = ppu_read(ppu, data_address + 1);
 }
 
 static bool ppu_fetch_push(ppu_t* ppu) {
@@ -143,7 +229,7 @@ static void ppu_fetcher_step(ppu_t* ppu) {
     }
 
     ppu->fetch_dots++;
-    if (ppu->fetch_dots < FETCH_STATE_DOTS) {
+    if (ppu->fetch_dots < 2u) {
         return;
     }
     
@@ -168,81 +254,4 @@ static void ppu_fetcher_step(ppu_t* ppu) {
     }
     
     ppu->fetch_dots = 0;
-}
-
-void ppu_init(ppu_t* ppu, bus_t* bus) {
-    ppu->bus = bus;
-
-    ppu_fifo_clear(&ppu->bg_fifo);
-    ppu_fifo_clear(&ppu->obj_fifo);
-}
-
-void ppu_step(ppu_t* ppu) {
-    ppu->line_dots++;
-
-    /* Entering PPU step. There are roughly 4 line_dots per M-cycle and 2 per Double-Speed M-cycle. */
-    switch (ppu->mode) {
-        /* OAM Scan Mode */
-        case PPU_MODE2:
-            /* TODO: OAM stuff */
-            if (ppu->line_dots == PPU_MODE2_DOTS) {  
-                ppu->xpos = 0;
-            }
-            break;
-
-        /* Drawing Mode */
-        case PPU_MODE3:
-            if (ppu->xpos == 160) {
-                ppu->mode = PPU_MODE0;
-            }
-
-            if (ppu_fifo_empty(&ppu->bg_fifo)) {
-                break;
-            }
-            
-            ppu_pixel_t pixel;
-            if (!ppu_fifo_pop(&ppu->bg_fifo, &pixel)) {
-                break;
-            }
-
-            if (ppu->discard_pixels != 0) {
-                ppu->discard_pixels--;
-            } else {
-                ppu->framebuffer[ppu->xpos * ppu->bus->io->ly] = pixel;
-                ppu->xpos++;
-            }
-
-            break;
-        /* H-Blank Mode */
-        case PPU_MODE0: {
-            if (ppu->line_dots == PPU_LINE_DOTS) {
-                ppu->line_dots = 0;
-                ppu->bus->io->ly++;
-                
-                ppu->mode = ppu->bus->io->ly == PPU_LY_VBLANK ? PPU_MODE1 : PPU_MODE2;
-            }
-            break;
-        }
-
-        /* V-Blank Mode */
-        case PPU_MODE1:
-            /* One scanline of V-Blank is equivalent to the duration of modes 2, 3, and 0 combined. */
-            if (ppu->line_dots == PPU_LINE_DOTS) {
-                ppu->line_dots = 0;
-                ppu->bus->io->ly++;
-            }
-
-            if (ppu->bus->io->ly == PPU_LY_BOTTOM) {
-                ppu->mode = PPU_MODE2;
-            }
-            break;
-    }
-}
-
-uint8_t ppu_read(ppu_t* ppu, uint16_t address) {
-    return bus_read8(ppu->bus, CONSUMER_PPU, address);
-}
-
-void ppu_write(ppu_t* ppu, uint16_t address, uint8_t value) {
-    bus_write8(ppu->bus, address, CONSUMER_PPU, value);
 }
