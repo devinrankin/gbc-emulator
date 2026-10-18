@@ -121,11 +121,11 @@ void ppu_step(ppu_t* ppu) {
 }
 
 static uint8_t ppu_read(ppu_t* ppu, uint16_t address) {
-    return bus_read8(ppu->bus, BUS_MASTER_PPU, address);
+    return bus_read(ppu->bus, BUS_MASTER_PPU, address);
 }
 
 static void ppu_write(ppu_t* ppu, uint16_t address, uint8_t value) {
-    bus_write8(ppu->bus, BUS_MASTER_PPU, address, value);
+    bus_write(ppu->bus, BUS_MASTER_PPU, address, value);
 }
 
 static uint16_t ppu_tile_get_map_address(const ppu_t* ppu) {

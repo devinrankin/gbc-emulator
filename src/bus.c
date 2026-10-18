@@ -16,7 +16,7 @@ void bus_init(bus_t* bus, cartridge_t* cartridge) {
 }
 
 /* Returns a byte from a pre-defined block of memory pointed to by the specified address. */
-uint8_t bus_read8(bus_t* bus, bus_master_t master, uint16_t address) {
+uint8_t bus_read(bus_t* bus, bus_master_t master, uint16_t address) {
     if (BETWEEN(address, ADDR_ROM0_BASE, ADDR_ROMX_BASE + ADDR_ROMX_SIZE) || BETWEEN(address, ADDR_EXRAM_BASE, ADDR_EXRAM_BASE + ADDR_EXRAM_SIZE)) {
         return cartridge_read(bus->cartridge, address);
     }
@@ -53,7 +53,7 @@ uint8_t bus_read8(bus_t* bus, bus_master_t master, uint16_t address) {
 }
 
 /* Attempts to write a byte to a pre-defined block of memory pointed to by the specified address. */
-void bus_write8(bus_t* bus, bus_master_t master, uint16_t address, uint8_t value) {
+void bus_write(bus_t* bus, bus_master_t master, uint16_t address, uint8_t value) {
     if (BETWEEN(address, ADDR_ROM0_BASE, ADDR_ROMX_BASE + ADDR_ROMX_SIZE) || BETWEEN(address, ADDR_EXRAM_BASE, ADDR_EXRAM_BASE + ADDR_EXRAM_SIZE)) {
         cartridge_write(bus->cartridge, address, value);
         return;
