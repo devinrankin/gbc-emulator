@@ -77,13 +77,6 @@ static unsigned op_di(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ei(sm83_t* sm83, uint8_t opcode);
 static unsigned op_nop(sm83_t* sm83, uint8_t opcode);
 
-// static unsigned op_noimpl(sm83_t* sm83, uint8_t opcode);
-
-/* Stack manipulation handler prototypes */
-static uint8_t stack_pop(sm83_t* sm83);
-static void stack_push(sm83_t* sm83, uint8_t value);
-
-
 /* Opcode dispatch table */
 
 const sm83_instruction_t sm83_opcode_table[256] = {
@@ -287,7 +280,7 @@ static unsigned op_ld_r16mem_a(sm83_t* sm83, uint8_t opcode) {
     uint8_t pair = OPCODE_P(opcode);
 
     uint16_t address = sm83_read_r16mem(sm83, pair);
-    bus_write8(sm83->bus, CONSUMER_SM83, address, sm83->registers.a);
+    bus_write8(sm83->bus, BUS_MASTER_SM83, address, sm83->registers.a);
 
     if (pair == SM83_R16MEM_HLI) {
         sm83_write_r16(sm83, SM83_R16_HL, address + 1);
@@ -302,7 +295,7 @@ static unsigned op_ld_a_r16mem(sm83_t* sm83, uint8_t opcode) {
     uint8_t pair = OPCODE_P(opcode);
 
     uint16_t address = sm83_read_r16mem(sm83, pair);
-    sm83->registers.a = bus_read8(sm83->bus, CONSUMER_SM83, address);
+    sm83->registers.a = bus_read8(sm83->bus, BUS_MASTER_SM83, address);
 
     if (pair == SM83_R16MEM_HLI) {
         sm83_write_r16(sm83, SM83_R16_HL, address + 1);
@@ -317,7 +310,7 @@ static unsigned op_ld_a_imm16mem(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
     uint16_t address = sm83_fetch16(sm83);
-    sm83->registers.a = bus_read8(sm83->bus, CONSUMER_SM83, address);
+    sm83->registers.a = bus_read8(sm83->bus, BUS_MASTER_SM83, address);
 
     return 4;
 }
@@ -326,14 +319,14 @@ static unsigned op_ld_imm16mem_a(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
     uint16_t address = sm83_fetch16(sm83);
-    bus_write8(sm83->bus, CONSUMER_SM83, address, sm83->registers.a);
+    bus_write8(sm83->bus, BUS_MASTER_SM83, address, sm83->registers.a);
 
     return 4;
 }
 
 static unsigned op_ldh_a_cmem(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = 0xFF00 & sm83_read_r8(sm83, SM83_R8_C);
-    uint8_t value = bus_read8(sm83->bus, CONSUMER_SM83, address);
+    uint8_t value = bus_read8(sm83->bus, BUS_MASTER_SM83, address);
 
     sm83->registers.a = value;
 
@@ -342,14 +335,14 @@ static unsigned op_ldh_a_cmem(sm83_t* sm83, uint8_t opcode) {
 
 static unsigned op_ldh_cmem_a(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = 0xFF00 & sm83_read_r8(sm83, SM83_R8_C);
-    bus_write8(sm83->bus, CONSUMER_SM83, address, sm83->registers.a);
+    bus_write8(sm83->bus, BUS_MASTER_SM83, address, sm83->registers.a);
 
     return 2;
 }
 
 static unsigned op_ldh_a_imm8mem(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = 0xFF00 & sm83_fetch8(sm83);
-    uint8_t value = bus_read8(sm83->bus, CONSUMER_SM83, address);
+    uint8_t value = bus_read8(sm83->bus, BUS_MASTER_SM83, address);
 
     sm83->registers.a = value;
 
@@ -358,7 +351,7 @@ static unsigned op_ldh_a_imm8mem(sm83_t* sm83, uint8_t opcode) {
 
 static unsigned op_ldh_imm8mem_a(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = 0xFF00 & sm83_fetch8(sm83);
-    bus_write8(sm83->bus, CONSUMER_SM83, address, sm83->registers.a);
+    bus_write8(sm83->bus, BUS_MASTER_SM83, address, sm83->registers.a);
 
     return 3;
 }
@@ -381,9 +374,9 @@ static unsigned op_ld_imm16mem_sp(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = sm83_fetch16(sm83); 
     uint16_t sp = sm83->registers.sp;
 
-    bus_write8(sm83->bus, CONSUMER_SM83, address, (uint8_t)(sp & 0xFF));
+    bus_write8(sm83->bus, BUS_MASTER_SM83, address, (uint8_t)(sp & 0xFF));
     address++;
-    bus_write8(sm83->bus, CONSUMER_SM83, address, (uint8_t)(sp >> 8));
+    bus_write8(sm83->bus, BUS_MASTER_SM83, address, (uint8_t)(sp >> 8));
 
     return 5;
 }
@@ -398,10 +391,7 @@ static unsigned op_ld_sp_hl(sm83_t* sm83, uint8_t opcode) {
 static unsigned op_pop_r16(sm83_t* sm83, uint8_t opcode) {
     uint8_t pair = OPCODE_P(opcode);
 
-    uint8_t low = stack_pop(sm83);
-    uint8_t high = stack_pop(sm83);
-    
-    uint16_t value = ((uint16_t)high << 8) | low;
+    uint16_t value = sm83_stack_pop_r16(sm83); 
     sm83_write_r16stk(sm83, pair, value);
 
     return 3;
@@ -411,11 +401,7 @@ static unsigned op_push_r16(sm83_t* sm83, uint8_t opcode) {
     uint8_t pair = OPCODE_P(opcode);
     uint16_t value = sm83_read_r16stk(sm83, pair);
 
-    uint8_t high = (uint8_t)(value >> 8);
-    uint8_t low = (uint8_t)(value & 0xFF); 
-
-    stack_push(sm83, high);
-    stack_push(sm83, low);
+    sm83_stack_push_r16(sm83, value);
 
     return 4;
 }
@@ -919,12 +905,7 @@ static unsigned op_jr_cc_imm8(sm83_t* sm83, uint8_t opcode) {
 static unsigned op_call_imm16(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = sm83_fetch16(sm83);
 
-    uint8_t high = (uint8_t)(address >> 8);
-    uint8_t low = (uint8_t)(address & 0xFF); 
-
-    stack_push(sm83, high);
-    stack_push(sm83, low);
-
+    sm83_stack_push_r16(sm83, sm83->registers.pc);
     sm83->registers.pc = address;
 
     return 6;  
@@ -951,10 +932,7 @@ static unsigned op_call_cc_imm16(sm83_t* sm83, uint8_t opcode) {
 static unsigned op_ret(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
-    uint8_t low = stack_pop(sm83);
-    uint8_t high = stack_pop(sm83);
-
-    sm83->registers.pc = ((uint16_t)high << 8) | low;
+    sm83->registers.pc = sm83_stack_pop_r16(sm83);;
 
     return 4;
 }
@@ -986,13 +964,8 @@ static unsigned op_reti(sm83_t* sm83, uint8_t opcode) {
 
 static unsigned op_rst(sm83_t* sm83, uint8_t opcode) {
     uint16_t vector = (uint16_t)OPCODE_Y(opcode) << 3;
-    uint16_t pc = sm83->registers.pc;
 
-    uint8_t high = (uint8_t)(pc >> 8);
-    uint8_t low = (uint8_t)(pc & 0xFF); 
-
-    stack_push(sm83, high);
-    stack_push(sm83, low);
+    sm83_stack_push_r16(sm83, sm83->registers.pc);
     
     sm83->registers.pc = vector;
 
@@ -1042,16 +1015,9 @@ static unsigned op_stop(sm83_t* sm83, uint8_t opcode) {
     return 1;
 }
 
-
-/* Stack manipulation function definitions */
-static void stack_push(sm83_t* sm83, uint8_t value) {
-    sm83->registers.sp--;
-    bus_write8(sm83->bus, CONSUMER_SM83, sm83->registers.sp, value);
-}
-
-static uint8_t stack_pop(sm83_t* sm83) {
-    uint8_t value = bus_read8(sm83->bus, CONSUMER_SM83, sm83->registers.sp);
-    sm83->registers.sp++;
+/* Fetches the next byte in ROM and increments the program counter. */
+uint8_t sm83_fetch8(sm83_t* sm83) {
+    uint8_t value = bus_read8(sm83->bus, BUS_MASTER_SM83, sm83->registers.pc++);
 
     return value;
 }

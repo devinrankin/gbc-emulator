@@ -64,7 +64,7 @@ uint8_t sm83_read_r8(sm83_t* sm83, uint8_t index) {
         case 3: return sm83->registers.e;
         case 4: return sm83->registers.h;
         case 5: return sm83->registers.l;
-        case 6: return bus_read8(sm83->bus, CONSUMER_SM83, sm83_read_r16(sm83, SM83_R16_HL));
+        case 6: return bus_read8(sm83->bus, BUS_MASTER_SM83, sm83_read_r16(sm83, SM83_R16_HL));
         case 7: return sm83->registers.a;
         default:
             NO_IMPL
@@ -80,7 +80,7 @@ void sm83_write_r8(sm83_t* sm83, uint8_t index, uint8_t value) {
         case 3: sm83->registers.e = value; break;
         case 4: sm83->registers.h = value; break;
         case 5: sm83->registers.l = value; break;
-        case 6: bus_write8(sm83->bus, CONSUMER_SM83, sm83_read_r16(sm83, SM83_R16_HL), value); break;
+        case 6: bus_write8(sm83->bus, BUS_MASTER_SM83, sm83_read_r16(sm83, SM83_R16_HL), value); break;
         case 7: sm83->registers.a = value; break;
         default:
             NO_IMPL
@@ -198,9 +198,29 @@ void sm83_update_flags(sm83_t* sm83, uint8_t mask, uint8_t values) {
     sm83->registers.f &= SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK;
 }
 
+uint16_t sm83_stack_pop_r16(sm83_t* sm83) {
+    uint8_t low = bus_read8(sm83->bus, BUS_MASTER_SM83, sm83->registers.sp);
+    sm83->registers.sp++;
+    uint8_t high = bus_read8(sm83->bus, BUS_MASTER_SM83, sm83->registers.sp);
+    sm83->registers.sp++;
+
+    return ((uint16_t)high << 8) | low;
+}
+
+void sm83_stack_push_r16(sm83_t* sm83, uint16_t value) {
+    uint8_t high = (uint8_t)(value >> 8);
+    uint8_t low = (uint8_t)(value & 0xFF);
+    
+    sm83->registers.sp--;
+    bus_write8(sm83->bus, BUS_MASTER_SM83, sm83->registers.sp, high);
+
+    sm83->registers.sp--;
+    bus_write8(sm83->bus, BUS_MASTER_SM83, sm83->registers.sp, low);
+}
+
 /* Fetches the next byte in ROM and increments the program counter. */
 uint8_t sm83_fetch8(sm83_t* sm83) {
-    uint8_t value = bus_read8(sm83->bus, CONSUMER_SM83, sm83->registers.pc++);
+    uint8_t value = bus_read8(sm83->bus, BUS_MASTER_SM83, sm83->registers.pc++);
 
     return value;
 }

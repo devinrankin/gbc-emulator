@@ -79,4 +79,7 @@ void sm83_write_r16mem(sm83_t* sm83, uint8_t pair, uint16_t value);
 uint8_t sm83_fetch8(sm83_t* sm83);
 uint16_t sm83_fetch16(sm83_t* sm83);
 
+uint16_t sm83_stack_pop_r16(sm83_t* sm83);
+void sm83_stack_push_r16(sm83_t* sm83, uint16_t value);
+
 #endif
