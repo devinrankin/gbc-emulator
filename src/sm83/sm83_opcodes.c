@@ -11,6 +11,7 @@ static unsigned op_ld_a_r16mem(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ld_r16mem_a(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ld_a_imm16mem(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ld_imm16mem_a(sm83_t* sm83, uint8_t opcode);
+static unsigned op_ld_sp_imm16(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ldh_cmem_a(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ldh_a_cmem(sm83_t* sm83, uint8_t opcode);
 static unsigned op_ldh_a_imm8mem(sm83_t* sm83, uint8_t opcode);
@@ -132,7 +133,7 @@ const sm83_instruction_t sm83_opcode_table[256] = {
     [0x2F] = INS(op_cpl, 1, "CPL"),
 
     [0x30] = INS(op_jr_cc_imm8, 2, "JR"),
-    [0x31] = INS(op_ld_r16_imm16, 3, "LD"),
+    [0x31] = INS(op_ld_sp_imm16, 3, "LD"),
     [0x32] = INS(op_ld_r16mem_a, 1, "LD"),
     [0x33] = INS(op_inc_r16, 1, "INC"),
     [0x34] = INS(op_inc_r8, 1, "INC"),
@@ -324,6 +325,15 @@ static unsigned op_ld_imm16mem_a(sm83_t* sm83, uint8_t opcode) {
     return 4;
 }
 
+static unsigned op_ld_sp_imm16(sm83_t* sm83, uint8_t opcode) {
+    (void)opcode;
+
+    uint16_t address = sm83_fetch16(sm83);
+    sm83->registers.sp = address;
+
+    return 3;
+}
+
 static unsigned op_ldh_a_cmem(sm83_t* sm83, uint8_t opcode) {
     uint16_t address = 0xFF00 & sm83_read_r8(sm83, SM83_R8_C);
     uint8_t value = bus_read(sm83->bus, BUS_MASTER_SM83, address);
@@ -341,7 +351,7 @@ static unsigned op_ldh_cmem_a(sm83_t* sm83, uint8_t opcode) {
 }
 
 static unsigned op_ldh_a_imm8mem(sm83_t* sm83, uint8_t opcode) {
-    uint16_t address = 0xFF00 & sm83_fetch8(sm83);
+    uint16_t address = 0xFF00 | sm83_fetch8(sm83);
     uint8_t value = bus_read(sm83->bus, BUS_MASTER_SM83, address);
 
     sm83->registers.a = value;
@@ -877,7 +887,7 @@ static unsigned op_jp_cc_imm16(sm83_t* sm83, uint8_t opcode) {
 static unsigned op_jr_imm8(sm83_t* sm83, uint8_t opcode) {
     (void)opcode;
 
-    int8_t offset = sm83_fetch8(sm83); 
+    int8_t offset = sm83_fetch8(sm83);
 
     sm83->registers.pc += offset;
 
@@ -898,6 +908,8 @@ static unsigned op_jr_cc_imm8(sm83_t* sm83, uint8_t opcode) {
     if (is_cond) {
         return op_jr_imm8(sm83, opcode);
     }
+
+    (void)sm83_fetch8(sm83);
 
     return 2;
 }
