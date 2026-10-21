@@ -10,10 +10,10 @@ typedef enum {
     SM83_ALU_ADC,
     SM83_ALU_SUB,
     SM83_ALU_SBC,
-    SM83_ALU_CP,
     SM83_ALU_AND,
+    SM83_ALU_XOR,
     SM83_ALU_OR,
-    SM83_ALU_XOR
+    SM83_ALU_CP,
 } sm83_alu_op_t;
 
 uint8_t alu_execute(sm83_t* sm83, sm83_alu_op_t operation, uint8_t lhs, uint8_t rhs);

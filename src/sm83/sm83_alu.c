@@ -9,22 +9,22 @@ static uint8_t alu_xor(sm83_t* sm83, uint8_t lhs, uint8_t rhs);
 
 uint8_t alu_execute(sm83_t *sm83, sm83_alu_op_t operation, uint8_t lhs, uint8_t rhs) {
     switch (operation) {
-        case SM83_ALU_ADD:
-            return alu_add(sm83, lhs, rhs, 0);
-        case SM83_ALU_ADC:
-            return alu_add(sm83, lhs, rhs, 1);
-        case SM83_ALU_SUB:
-            return alu_sub(sm83, lhs, rhs, 0);
-        case SM83_ALU_SBC:
-            return alu_sub(sm83, lhs, rhs, 1);
-        case SM83_ALU_CP:
-            return alu_sub(sm83, lhs, rhs, 0);
-        case SM83_ALU_AND:
-            return alu_and(sm83, lhs, rhs);
-        case SM83_ALU_OR:
-            return alu_or(sm83, lhs, rhs);
-        case SM83_ALU_XOR:
-            return alu_xor(sm83, lhs, rhs);
+    case SM83_ALU_ADD:
+        return alu_add(sm83, lhs, rhs, 0);
+    case SM83_ALU_ADC:
+        return alu_add(sm83, lhs, rhs, 1);
+    case SM83_ALU_SUB:
+        return alu_sub(sm83, lhs, rhs, 0);
+    case SM83_ALU_SBC:
+        return alu_sub(sm83, lhs, rhs, 1);
+    case SM83_ALU_AND:
+        return alu_and(sm83, lhs, rhs);
+    case SM83_ALU_XOR:
+        return alu_xor(sm83, lhs, rhs);
+    case SM83_ALU_OR:
+        return alu_or(sm83, lhs, rhs);
+    case SM83_ALU_CP:
+        return alu_sub(sm83, lhs, rhs, 0);
     }
 }
 
@@ -92,7 +92,7 @@ static uint8_t alu_and(sm83_t* sm83, uint8_t lhs, uint8_t rhs) {
     if(result == 0) flags |= SM83_FLAG_Z_MASK;
     flags |= SM83_FLAG_H_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_H_MASK, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
     return result;
 }
 
@@ -111,10 +111,10 @@ static uint8_t alu_xor(sm83_t* sm83, uint8_t lhs, uint8_t rhs) {
     uint8_t result = lhs ^ rhs;
 
     uint8_t flags = 0;
-
+    
     if(result == 0) flags |= SM83_FLAG_Z_MASK;
 
-    sm83_update_flags(sm83, SM83_FLAG_Z_MASK, flags);
+    sm83_update_flags(sm83, SM83_FLAG_Z_MASK | SM83_FLAG_N_MASK | SM83_FLAG_H_MASK | SM83_FLAG_C_MASK, flags);
     return result;
 }
 
