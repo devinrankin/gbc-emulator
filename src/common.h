@@ -4,8 +4,9 @@
 #include <stdio.h>
 
 #define BIT(a, n) (((a) >> (n)) & 1u)
-#define BIT_SET // todo
-#define BETWEEN(a, b,c ) ((a >= b) && (a <= c)) 
+#define BIT_SET(a, n) ((a) | (1u << n))
+#define BIT_CLEAR(a, n) ((a) & ~(1u << n))
+#define BETWEEN(a, b, c) ((a >= b) && (a <= c)) 
 
 #define NO_IMPL { fprintf(stderr, "NOT YET IMPLEMENTED\n"); exit(-5); }
 
