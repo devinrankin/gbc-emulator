@@ -65,10 +65,10 @@
 #define ADDR_IE 0xFFFF
 
 typedef enum {
-    BUS_MASTER_SM83,
-    BUS_MASTER_PPU,
-    BUS_MASTER_NONE,
-} bus_master_t;
+    BUS_CALLER_SM83,
+    BUS_CALLER_PPU,
+    BUS_CALLER_NONE,
+} bus_caller_t;
 
 typedef struct {
     cartridge_t* cartridge;
@@ -84,13 +84,12 @@ typedef struct {
     uint8_t vram_bank;
     uint8_t wram_bank;
 
-    uint8_t interrupt_flags;
     uint8_t interrupt_enable;
 } bus_t;
 
 void bus_init(bus_t* bus, cartridge_t* cartridge);
 
-uint8_t bus_read(bus_t* bus, bus_master_t consumer, uint16_t address);
-void bus_write(bus_t* bus, bus_master_t consumer, uint16_t address, uint8_t value);
+uint8_t bus_read(bus_t* bus, bus_caller_t caller, uint16_t address);
+void bus_write(bus_t* bus, bus_caller_t caller, uint16_t address, uint8_t value);
 
 #endif

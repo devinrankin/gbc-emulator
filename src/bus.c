@@ -1,7 +1,7 @@
 #include "bus.h"
 
-static uint8_t vram_read(bus_t* bus, bus_master_t master, uint16_t address);
-static void vram_write(bus_t* bus, bus_master_t master, uint16_t address, uint8_t value);
+static uint8_t vram_read(bus_t* bus, bus_caller_t caller, uint16_t address);
+static void vram_write(bus_t* bus, bus_caller_t caller, uint16_t address, uint8_t value);
 static uint8_t wram_read(bus_t* bus, uint16_t address); 
 static void wram_write(bus_t* bus, uint16_t address, uint8_t value); 
 
@@ -10,19 +10,20 @@ void bus_init(bus_t* bus, cartridge_t* cartridge) {
         .cartridge = cartridge,
         .vram_bank = 0,
         .wram_bank = 1,
-        .interrupt_flags = 0,
         .interrupt_enable = 0,
     };
 }
 
 /* Returns a byte from a pre-defined block of memory pointed to by the specified address. */
-uint8_t bus_read(bus_t* bus, bus_master_t master, uint16_t address) {
+uint8_t bus_read(bus_t* bus, bus_caller_t caller, uint16_t address) {
     if (BETWEEN(address, ADDR_ROM0_BASE, ADDR_ROMX_BASE + ADDR_ROMX_SIZE) || BETWEEN(address, ADDR_EXRAM_BASE, ADDR_EXRAM_BASE + ADDR_EXRAM_SIZE)) {
         return cartridge_read(bus->cartridge, address);
     }
 
     if (BETWEEN(address, ADDR_VRAM_BASE, ADDR_VRAM_BASE + ADDR_VRAM_SIZE)) {
-        return vram_read(bus, master, address); 
+        uint8_t value = vram_read(bus, caller, address);
+
+        return value; 
     }
 
     if (BETWEEN(address, ADDR_WRAM0_BASE, ADDR_WRAMX_BASE + ADDR_WRAMX_SIZE)) {
@@ -53,14 +54,14 @@ uint8_t bus_read(bus_t* bus, bus_master_t master, uint16_t address) {
 }
 
 /* Attempts to write a byte to a pre-defined block of memory pointed to by the specified address. */
-void bus_write(bus_t* bus, bus_master_t master, uint16_t address, uint8_t value) {
+void bus_write(bus_t* bus, bus_caller_t caller, uint16_t address, uint8_t value) {
     if (BETWEEN(address, ADDR_ROM0_BASE, ADDR_ROMX_BASE + ADDR_ROMX_SIZE) || BETWEEN(address, ADDR_EXRAM_BASE, ADDR_EXRAM_BASE + ADDR_EXRAM_SIZE)) {
         cartridge_write(bus->cartridge, address, value);
         return;
     }
 
     if (BETWEEN(address, ADDR_VRAM_BASE, ADDR_VRAM_BASE + ADDR_VRAM_SIZE)) {
-        vram_write(bus, master, address, value);
+        vram_write(bus, caller, address, value);
         return;
     }
 
@@ -97,52 +98,52 @@ void bus_write(bus_t* bus, bus_master_t master, uint16_t address, uint8_t value)
 }
 
 /* Returns the byte in VRAM pointed to by the specified address. */
-static uint8_t vram_read(bus_t* bus, bus_master_t master, uint16_t address) {
+static uint8_t vram_read(bus_t* bus, bus_caller_t caller, uint16_t address) {
     uint8_t ppu_mode = bus->io.stat & 2;
-    if (master == BUS_MASTER_SM83 && ppu_mode == 3) {
+    if (caller == BUS_CALLER_SM83 && ppu_mode == 3) {
         return 0xFF;
     }
 
-    uint16_t physical_offset = (uint16_t)bus->vram_bank * ADDR_VRAM_SIZE + (address - ADDR_VRAM_BASE);
+    uint16_t offset = (uint16_t)bus->io.vbk * ADDR_VRAM_SIZE + (address - ADDR_VRAM_BASE);
 
-    return bus->vram[physical_offset];
+    return bus->vram[offset];
 }
 
 /* Writes a byte into VRAM at the specified address. */
-static void vram_write(bus_t* bus, bus_master_t master, uint16_t address, uint8_t value) {
+static void vram_write(bus_t* bus, bus_caller_t caller, uint16_t address, uint8_t value) {
     uint8_t ppu_mode = bus->io.stat & 2;
-    if (master == BUS_MASTER_SM83 && ppu_mode == 3) {
+    if (caller == BUS_CALLER_SM83 && ppu_mode == 3) {
         return;
     }
 
-    uint16_t physical_offset = (uint16_t)bus->vram_bank * ADDR_VRAM_SIZE + (address - ADDR_VRAM_BASE);
+    uint16_t offset = (uint16_t)bus->io.vbk * ADDR_VRAM_SIZE + (address - ADDR_VRAM_BASE);
 
-    bus->vram[physical_offset] = value;
+    bus->vram[offset] = value;
 }
 
 /* Returns the byte in WRAM pointed to by the specified address. */
 static uint8_t wram_read(bus_t* bus, uint16_t address) {
-    uint16_t physical_offset;
+    uint16_t offset;
 
     if(address <= ADDR_WRAM0_BASE) {
-        physical_offset = address - ADDR_WRAM0_BASE;
+        offset = address - ADDR_WRAM0_BASE;
     } else {
-        physical_offset = (uint16_t)bus->wram_bank * ADDR_WRAMX_SIZE + (address - ADDR_WRAMX_BASE);
+        offset = (uint16_t)bus->io.svbk * ADDR_WRAMX_SIZE + (address - ADDR_WRAMX_BASE);
     }
 
-    return bus->wram[physical_offset];
+    return bus->wram[offset];
 }
 
 /* Writes a byte into WRAM at the specified address. */
 static void wram_write(bus_t* bus, uint16_t address, uint8_t value) {
-    uint16_t physical_offset;
+    uint16_t offset;
 
     if(address <= ADDR_WRAM0_BASE) {
-        physical_offset = address - ADDR_WRAM0_BASE;
+        offset = address - ADDR_WRAM0_BASE;
     } else {
-        physical_offset = (uint16_t)bus->wram_bank * ADDR_WRAMX_SIZE + (address - ADDR_WRAMX_BASE);
+        offset = (uint16_t)bus->io.svbk * ADDR_WRAMX_SIZE + (address - ADDR_WRAMX_BASE);
     }
 
-    bus->wram[physical_offset] = value;
+    bus->wram[offset] = value;
 }
 
